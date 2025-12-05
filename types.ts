@@ -1,4 +1,5 @@
 
+
 export enum ToolType {
   BRUSH = 'BRUSH',
   ERASER = 'ERASER',
@@ -98,7 +99,14 @@ export type ShortcutAction =
   | 'LAYER_NEXT' | 'LAYER_PREV' // Active Layer
   | 'FOCUS_NEXT' | 'FOCUS_PREV' // Focal Layer
   | 'TOGGLE_GYRO' | 'TOGGLE_MENU' | 'EXPORT' | 'TOGGLE_DEBUG'
-  | 'LOCK_VIEW' | 'RESET_VIEW'; // New: Parallax View Locking
+  | 'LOCK_VIEW' | 'RESET_VIEW'
+  | 'DOF_INC' | 'DOF_DEC' // Depth of Field
+  | 'INVERT_PARALLAX'
+  | 'BLEND_MODE_NEXT'
+  | 'TOGGLE_GRID'
+  | 'SYMMETRY_NEXT'
+  | 'COLOR_SLOT_NEXT' | 'COLOR_SLOT_PREV'
+  | 'RANDOM_LAYER' | 'RANDOM_COLOR'; // Added Random Actions
 
 export interface KeyBinding {
   key: string;
@@ -140,6 +148,7 @@ export interface AppState {
   // Grid Settings
   isGridEnabled: boolean;
   isSnappingEnabled: boolean;
+  isParallaxSnappingEnabled: boolean; // New: Snaps parallax offset to grid
   gridSize: number; // 10 to 100
   symmetryMode: SymmetryMode; // New
 

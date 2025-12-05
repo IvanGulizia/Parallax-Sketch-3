@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Play, Pause, Droplet, Brush, Eraser, MousePointer2, 
@@ -6,7 +5,7 @@ import {
   Menu, Download, Upload, PaintBucket, Shuffle, Share2, Link,
   Link2, Link2Off, Square, Zap, Battery, RotateCcw, Dices,
   LayoutTemplate, X, ChevronLeft, ChevronRight, Command, Hand, Palette,
-  ArrowUp, ArrowDown, Bug, Keyboard
+  ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Bug, Keyboard, Lock
 } from 'lucide-react';
 
 export const Icons = {
@@ -45,6 +44,9 @@ export const Icons = {
   Palette,
   ArrowUp,
   ArrowDown,
+  ArrowLeft,
+  ArrowRight,
   Bug,
-  KeyIcon: Keyboard
+  KeyIcon: Keyboard,
+  Lock
 };

@@ -15,9 +15,9 @@ interface DebugOverlayProps {
 }
 
 const CATEGORIES: Record<string, ShortcutAction[]> = {
-    'Navigation': ['LAYER_NEXT', 'LAYER_PREV', 'FOCUS_NEXT', 'FOCUS_PREV', 'PREV_PALETTE', 'NEXT_PALETTE'],
-    'Colors': ['COLOR_1', 'COLOR_2', 'COLOR_3', 'COLOR_4', 'COLOR_5', 'COLOR_6', 'COLOR_7'],
-    'Canvas': ['PLAY_PAUSE', 'UNDO', 'REDO', 'RESET', 'TOGGLE_GYRO', 'LOCK_VIEW', 'RESET_VIEW'],
+    'Navigation': ['LAYER_NEXT', 'LAYER_PREV', 'FOCUS_NEXT', 'FOCUS_PREV', 'PREV_PALETTE', 'NEXT_PALETTE', 'RANDOM_LAYER'],
+    'Colors': ['COLOR_1', 'COLOR_2', 'COLOR_3', 'COLOR_4', 'COLOR_5', 'COLOR_6', 'COLOR_7', 'RANDOM_COLOR'],
+    'Canvas': ['PLAY_PAUSE', 'UNDO', 'REDO', 'RESET', 'TOGGLE_GYRO', 'LOCK_VIEW', 'RESET_VIEW', 'TOGGLE_GRID'],
     'System': ['EXPORT', 'TOGGLE_MENU', 'TOGGLE_DEBUG']
 };
 
@@ -55,8 +55,18 @@ const PRESET_SHORTCUTS: Record<string, ShortcutConfig> = {
             'TOGGLE_MENU': [],
             'EXPORT': [{ key: 'e' }],
             'TOGGLE_DEBUG': [{ key: 'h' }],
-            'LOCK_VIEW': [{ key: 'g' }],
-            'RESET_VIEW': [{ key: 'j' }]
+            'LOCK_VIEW': [{ key: 'l' }],
+            'RESET_VIEW': [{ key: 'k' }],
+            'DOF_INC': [{ key: 'ArrowRight' }],
+            'DOF_DEC': [{ key: 'ArrowLeft' }],
+            'INVERT_PARALLAX': [{ key: 'i' }],
+            'BLEND_MODE_NEXT': [{ key: 'o' }],
+            'TOGGLE_GRID': [{ key: 'g' }], // Updated
+            'SYMMETRY_NEXT': [{ key: 'f' }],
+            'COLOR_SLOT_NEXT': [{ key: 'x' }],
+            'COLOR_SLOT_PREV': [{ key: 'y' }],
+            'RANDOM_LAYER': [{ key: '0' }], // New
+            'RANDOM_COLOR': [{ key: '8' }] // New
         },
         embed: {
             'UNDO': [], 'REDO': [],
@@ -74,7 +84,17 @@ const PRESET_SHORTCUTS: Record<string, ShortcutConfig> = {
             'EXPORT': [],
             'TOGGLE_DEBUG': [{ key: 'h' }],
             'LOCK_VIEW': [],
-            'RESET_VIEW': []
+            'RESET_VIEW': [],
+            'DOF_INC': [{ key: 'ArrowRight' }],
+            'DOF_DEC': [{ key: 'ArrowLeft' }],
+            'INVERT_PARALLAX': [{ key: 'i' }],
+            'BLEND_MODE_NEXT': [{ key: 'o' }],
+            'TOGGLE_GRID': [{ key: 'g' }], // Updated
+            'SYMMETRY_NEXT': [{ key: 'f' }],
+            'COLOR_SLOT_NEXT': [{ key: 'x' }],
+            'COLOR_SLOT_PREV': [{ key: 'y' }],
+            'RANDOM_LAYER': [],
+            'RANDOM_COLOR': []
         }
     },
     'iPad / Tablet': {
@@ -95,7 +115,17 @@ const PRESET_SHORTCUTS: Record<string, ShortcutConfig> = {
             'EXPORT': [{ key: 'e' }],
             'TOGGLE_DEBUG': [{ key: 'h' }],
             'LOCK_VIEW': [],
-            'RESET_VIEW': []
+            'RESET_VIEW': [],
+            'DOF_INC': [],
+            'DOF_DEC': [],
+            'INVERT_PARALLAX': [],
+            'BLEND_MODE_NEXT': [],
+            'TOGGLE_GRID': [],
+            'SYMMETRY_NEXT': [],
+            'COLOR_SLOT_NEXT': [],
+            'COLOR_SLOT_PREV': [],
+            'RANDOM_LAYER': [],
+            'RANDOM_COLOR': []
         },
         embed: {
             'UNDO': [], 'REDO': [],
@@ -112,7 +142,17 @@ const PRESET_SHORTCUTS: Record<string, ShortcutConfig> = {
             'EXPORT': [],
             'TOGGLE_DEBUG': [{ key: 'h' }],
             'LOCK_VIEW': [],
-            'RESET_VIEW': []
+            'RESET_VIEW': [],
+            'DOF_INC': [],
+            'DOF_DEC': [],
+            'INVERT_PARALLAX': [],
+            'BLEND_MODE_NEXT': [],
+            'TOGGLE_GRID': [],
+            'SYMMETRY_NEXT': [],
+            'COLOR_SLOT_NEXT': [],
+            'COLOR_SLOT_PREV': [],
+            'RANDOM_LAYER': [],
+            'RANDOM_COLOR': []
         }
     }
 };

@@ -2,6 +2,7 @@
 import React, { useRef, useEffect, useState, useCallback, useLayoutEffect } from 'react';
 import { ToolType, Point, Stroke, EraserMode, SpringConfig, BlendMode, ExportConfig, TrajectoryType, SymmetryMode } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { Icons } from './Icons';
 
 interface DrawingCanvasProps {
   activeTool: ToolType;
@@ -26,6 +27,7 @@ interface DrawingCanvasProps {
   layerBlurStrengths?: Record<number, number>;
   isGridEnabled: boolean;
   isSnappingEnabled: boolean;
+  isParallaxSnappingEnabled: boolean;
   gridSize: number;
   symmetryMode: SymmetryMode;
   useGyroscope: boolean;
@@ -43,8 +45,8 @@ interface DrawingCanvasProps {
   strokes: Stroke[];
   isEmbedMode?: boolean;
   isMobile?: boolean;
-  guideColor?: string; // New Prop for guide colors
-  viewLockTrigger?: { type: 'LOCK' | 'RESET' | 'UNLOCK', ts: number }; // Updated Prop for View Locking
+  guideColor?: string;
+  viewLockTrigger?: { type: 'LOCK' | 'RESET' | 'UNLOCK', ts: number };
 }
 
 const OVERSCAN_MARGIN = 800; // Increased for "Infinite Canvas" feel
@@ -72,6 +74,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   layerBlurStrengths,
   isGridEnabled,
   isSnappingEnabled,
+  isParallaxSnappingEnabled,
   gridSize,
   symmetryMode,
   useGyroscope,
@@ -95,7 +98,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
-  const offscreenCanvases = useRef<(HTMLCanvasElement | null)[]>([null, null, null, null, null, null, null]);
+  // Initialize with 9 layers (indices 0 to 8)
+  const offscreenCanvases = useRef<(HTMLCanvasElement | null)[]>(new Array(9).fill(null));
   
   // Physics State
   const targetOffset = useRef({ x: 0, y: 0 });
@@ -106,6 +110,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   // View Lock State
   const isViewLocked = useRef(false);
   const lockedOffset = useRef({ x: 0, y: 0 });
+  const [isLockedUI, setIsLockedUI] = useState(false); // Local state for UI feedback
 
   // Interaction
   const isDrawing = useRef(false);
@@ -141,27 +146,49 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  // --- View Locking Effect ---
+  // --- View Locking Effect (Revised) ---
   useEffect(() => {
       if (!viewLockTrigger || viewLockTrigger.ts === 0) return;
 
       if (viewLockTrigger.type === 'LOCK') {
-           // We can only lock if we are currently playing (moving)
-           // Capture the CURRENT visual offset (smoothed) to avoid jumps
            if (isPlaying) {
              isViewLocked.current = true;
-             lockedOffset.current = { ...currentOffset.current };
+             
+             let finalX = currentOffset.current.x;
+             let finalY = currentOffset.current.y;
+
+             // Grid Snapping Logic for Lock
+             if (isGridEnabled && dimensions.width > 0 && dimensions.height > 0) {
+                 // Convert normalized offset (-1 to 1) to approximate pixel offset from center
+                 const halfW = dimensions.width / 2;
+                 const halfH = dimensions.height / 2;
+                 
+                 const pxX = finalX * halfW;
+                 const pxY = finalY * halfH;
+
+                 // Snap to nearest grid multiple
+                 const snappedPxX = Math.round(pxX / gridSize) * gridSize;
+                 const snappedPxY = Math.round(pxY / gridSize) * gridSize;
+
+                 // Convert back to normalized
+                 finalX = snappedPxX / halfW;
+                 finalY = snappedPxY / halfH;
+             }
+
+             lockedOffset.current = { x: finalX, y: finalY };
+             targetOffset.current = { x: finalX, y: finalY }; // Force target immediately to snapped pos
+             setIsLockedUI(true);
            }
       } else if (viewLockTrigger.type === 'RESET') {
-          // Reset to center (0,0) and unlock
           isViewLocked.current = false;
           lockedOffset.current = { x: 0, y: 0 };
           targetOffset.current = { x: 0, y: 0 };
+          setIsLockedUI(false);
       } else if (viewLockTrigger.type === 'UNLOCK') {
-          // Just unlock, resume normal physics
           isViewLocked.current = false;
+          setIsLockedUI(false);
       }
-  }, [viewLockTrigger, isPlaying]);
+  }, [viewLockTrigger, isPlaying, isGridEnabled, gridSize, dimensions]);
 
   const normalizePoint = (x: number, y: number, width: number, height: number): Point => ({
       x: x / width,
@@ -177,6 +204,25 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       if (dimensions.width === 0) return 1;
       return Math.max(0.1, dimensions.width / 1000);
   }, [dimensions.width]);
+
+  // --- Helper: Calculate Layer Offset (Including Snapping) ---
+  const calculateLayerOffset = useCallback((layerIndex: number, currentX: number, currentY: number) => {
+        const maxPx = (parallaxStrength / 100) * OVERSCAN_MARGIN;
+        const direction = parallaxInverted ? -1 : 1;
+        const relativeDepth = (layerIndex - focalLayerIndex) * 0.5;
+        
+        // Base pixel offsets
+        let offX = -currentX * maxPx * relativeDepth * direction;
+        let offY = -currentY * maxPx * relativeDepth * direction;
+
+        // Apply Parallax Movement Snapping Logic
+        if (isGridEnabled && isParallaxSnappingEnabled) {
+            offX = Math.round(offX / gridSize) * gridSize;
+            offY = Math.round(offY / gridSize) * gridSize;
+        }
+
+        return { x: offX, y: offY };
+  }, [parallaxStrength, parallaxInverted, focalLayerIndex, isGridEnabled, isParallaxSnappingEnabled, gridSize]);
 
   // --- Rendering ---
   const renderLayer = useCallback((layerIndex: number) => {
@@ -198,18 +244,14 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // --- Grid Rendering (CENTERED) ---
-    // Use guideColor prop for rendering grid
     if (isGridEnabled && layerIndex === activeLayer && !isPlaying && !exportConfig?.isActive) {
         ctx.save();
         ctx.fillStyle = guideColor;
         ctx.globalAlpha = 1; 
         
-        // Calculate Center of the bitmap
         const centerX = fullWidth / 2;
         const centerY = fullHeight / 2;
 
-        // Calculate offset to ensure a grid line hits the center
-        // We start from (center % gridSize) and iterate
         const startX = (centerX % gridSize);
         const startY = (centerY % gridSize);
 
@@ -224,7 +266,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     }
 
     // --- Symmetry Guides Rendering (CENTERED) ---
-    // Use guideColor prop for rendering guides
     if (layerIndex === activeLayer && symmetryMode !== SymmetryMode.NONE && !isEmbedMode && !exportConfig?.isActive && !isPlaying) {
         ctx.save();
         ctx.beginPath();
@@ -233,7 +274,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         ctx.setLineDash([4, 6]); 
         ctx.lineWidth = 1; 
         
-        // This coordinates already point to the exact center of the bitmap
         const centerX = (dimensions.width / 2) + OVERSCAN_MARGIN;
         const centerY = (dimensions.height / 2) + OVERSCAN_MARGIN;
 
@@ -324,18 +364,14 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   }, [strokes, selectedStrokeId, dimensions, palette, isLowPowerMode, symmetryMode, activeLayer, isEmbedMode, exportConfig, isPlaying, getScaleFactor, guideColor, isGridEnabled, gridSize]);
 
   useEffect(() => {
-    [0, 1, 2, 3, 4, 5, 6].forEach(renderLayer);
+    // Render loop for 9 layers
+    [0, 1, 2, 3, 4, 5, 6, 7, 8].forEach(renderLayer);
   }, [strokes, renderLayer, selectedStrokeId, dimensions, palette, symmetryMode, guideColor, isGridEnabled]);
 
-  const applyParallaxTransforms = (offsetX: number, offsetY: number) => {
-    const maxPx = (parallaxStrength / 100) * OVERSCAN_MARGIN;
-    const direction = parallaxInverted ? -1 : 1;
-    
+  const applyParallaxTransforms = (currentX: number, currentY: number) => {
     const layers = containerRef.current?.querySelectorAll('.layer-canvas');
     layers?.forEach((layer, i) => {
-        const relativeDepth = (i - focalLayerIndex) * 0.5;
-        const x = -offsetX * maxPx * relativeDepth * direction;
-        const y = -offsetY * maxPx * relativeDepth * direction;
+        const { x, y } = calculateLayerOffset(i, currentX, currentY);
         (layer as HTMLElement).style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
     });
   };
@@ -344,7 +380,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     if (dimensions.width > 0 && dimensions.height > 0) {
         applyParallaxTransforms(currentOffset.current.x, currentOffset.current.y);
     }
-  }, [dimensions, focalLayerIndex, parallaxStrength, parallaxInverted]);
+  }, [dimensions, focalLayerIndex, parallaxStrength, parallaxInverted, calculateLayerOffset]);
 
   useEffect(() => {
       if (exportConfig?.isRecording && !recorderRef.current) {
@@ -409,14 +445,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   }, [exportConfig?.isRecording, exportConfig?.format, dimensions, onExportComplete]);
 
   useEffect(() => {
-    // We attach to window to handle dragging outside
     const handleWindowMouseMove = (e: MouseEvent) => {
         if (!containerRef.current) return;
         
-        // Physics view dragging - Only if NOT drawing
-        // Logic Update:
-        // 1. Must be playing to move view with mouse
-        // 2. Must NOT be locked
         if (!isDrawing.current && !exportConfig?.isActive && !useGyroscope && !isViewLocked.current && isPlaying) {
             const { width, height, left, top } = containerRef.current.getBoundingClientRect();
             const x = ((e.clientX - left) / width) * 2 - 1;
@@ -427,7 +458,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             }
         }
         
-        // Drawing Continuation - Works even if playing
         if (isDrawing.current) {
             const pt = getNormalizedLocalPoint(e);
             currentStrokePoints.current.push(pt);
@@ -521,7 +551,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       }
     } 
     
-    // Always attach mouse events for drawing
     window.addEventListener('mousemove', handleWindowMouseMove);
     window.addEventListener('mouseup', handleWindowMouseUp);
 
@@ -536,7 +565,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     let nextX = currentOffset.current.x;
     let nextY = currentOffset.current.y;
     
-    // Priority 1: Export (Procedural)
     if (exportConfig?.isActive) {
         const now = Date.now();
         const durationMs = exportConfig.duration * 1000;
@@ -582,11 +610,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             }
         }
     } 
-    // Priority 2: Locked View (Force to Locked Offset)
     else if (isViewLocked.current) {
-         // Spring to locked position for smooth locking, or snap?
-         // Prompt says "gèle instantanément" but we capture the currentOffset so it shouldn't jump.
-         // We simply drive the offset towards the locked point.
          targetOffset.current = lockedOffset.current;
          
          const stiffness = springConfig.stiffness; 
@@ -598,7 +622,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
          nextX += velocity.current.x;
          nextY += velocity.current.y;
     }
-    // Priority 3: Paused (Default to 0,0)
     else if (!isPlaying) {
          targetOffset.current = { x: 0, y: 0 };
          
@@ -612,25 +635,19 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             nextX += velocity.current.x;
             nextY += velocity.current.y;
         } else {
-            // In low power, simple lerp back to center
             const lerpFactor = 0.15;
             nextX += (targetOffset.current.x - nextX) * lerpFactor;
             nextY += (targetOffset.current.y - nextY) * lerpFactor;
         }
     }
-    // Priority 4: Playing (Follow Mouse/Gyro Target)
     else {
-        // targetOffset is updated by mouse move listener
         if (!isLowPowerMode) {
             const stiffness = springConfig.stiffness; 
             const damping = springConfig.damping;
-
             const forceX = (targetOffset.current.x - currentOffset.current.x) * stiffness;
             const forceY = (targetOffset.current.y - currentOffset.current.y) * stiffness;
-
             velocity.current.x = (velocity.current.x + forceX) * damping;
             velocity.current.y = (velocity.current.y + forceY) * damping;
-
             nextX += velocity.current.x;
             nextY += velocity.current.y;
         } else {
@@ -640,27 +657,33 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         }
     }
 
-    currentOffset.current.x = nextX;
-    currentOffset.current.y = nextY;
-
-    applyParallaxTransforms(nextX, nextY);
+    // Performance Optimization: Check for idling
+    // If we are not playing, not locked, not exporting, and the movement is negligible, skip DOM updates
+    const dx = nextX - currentOffset.current.x;
+    const dy = nextY - currentOffset.current.y;
+    const isMoving = Math.abs(dx) > 0.00001 || Math.abs(dy) > 0.00001;
     
+    // Always update if exporting. For play/lock, only update if actually moving.
+    const shouldUpdate = exportConfig?.isActive || isMoving;
+
+    if (shouldUpdate) {
+        currentOffset.current.x = nextX;
+        currentOffset.current.y = nextY;
+        applyParallaxTransforms(nextX, nextY);
+    }
+
     if (exportConfig?.isRecording && recordingCanvas.current && recorderRef.current?.state === 'recording') {
         const ctx = recordingCanvas.current.getContext('2d');
         if (ctx) {
             ctx.fillStyle = backgroundColor;
             ctx.fillRect(0, 0, dimensions.width, dimensions.height);
 
-            const maxPx = (parallaxStrength / 100) * OVERSCAN_MARGIN;
-            const direction = parallaxInverted ? -1 : 1;
-            
-            [0, 1, 2, 3, 4, 5, 6].forEach(index => {
+            // Recording loop for 9 layers
+            [0, 1, 2, 3, 4, 5, 6, 7, 8].forEach(index => {
                 const source = offscreenCanvases.current[index];
                 if (!source) return;
 
-                const relativeDepth = (index - focalLayerIndex) * 0.5;
-                const offX = -nextX * maxPx * relativeDepth * direction;
-                const offY = -nextY * maxPx * relativeDepth * direction;
+                const { x: offX, y: offY } = calculateLayerOffset(index, nextX, nextY);
 
                 const drawX = (dimensions.width - source.width) / 2 + offX;
                 const drawY = (dimensions.height - source.height) / 2 + offY;
@@ -701,7 +724,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   useEffect(() => {
     requestRef.current = requestAnimationFrame(animationLoop);
     return () => cancelAnimationFrame(requestRef.current);
-  }, [parallaxStrength, focalLayerIndex, springConfig, parallaxInverted, isLowPowerMode, exportConfig, blurStrength, focusRange, layerBlurStrengths, getScaleFactor, guideColor, isPlaying]); 
+  }, [parallaxStrength, focalLayerIndex, springConfig, parallaxInverted, isLowPowerMode, exportConfig, blurStrength, focusRange, layerBlurStrengths, getScaleFactor, guideColor, isPlaying, calculateLayerOffset]); 
 
   const getNormalizedLocalPoint = (e: React.MouseEvent | React.TouchEvent | MouseEvent, overrideLayerId?: number) => {
     if (!containerRef.current) return { x: 0, y: 0 };
@@ -716,34 +739,16 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         clientY = (e as MouseEvent).clientY;
     }
 
-    // Parallax Compensation Logic:
-    // When Parallax moves the layer visually, the mouse click must be mapped
-    // to the correct original coordinate on that layer.
-    
     const layerToUse = overrideLayerId ?? activeLayer;
-    const maxPx = (parallaxStrength / 100) * OVERSCAN_MARGIN;
-    const relativeDepth = (layerToUse - focalLayerIndex) * 0.5;
-    const direction = parallaxInverted ? -1 : 1;
-    
-    // The visual offset applied to the layer
-    const offsetX = -currentOffset.current.x * maxPx * relativeDepth * direction;
-    const offsetY = -currentOffset.current.y * maxPx * relativeDepth * direction;
+    const { x: offsetX, y: offsetY } = calculateLayerOffset(layerToUse, currentOffset.current.x, currentOffset.current.y);
 
-    // "Reverse" the offset to find the point on the untransformed canvas
     let x = (clientX - rect.left) - offsetX;
     let y = (clientY - rect.top) - offsetY;
     
-    // CENTER-BASED SNAPPING
-    // FIX: Removed !isPlaying check. Snapping now works during play.
     if (overrideLayerId === undefined && isGridEnabled && isSnappingEnabled) {
-        // Calculate the center of the viewport (container)
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
 
-        // Snapping logic:
-        // 1. Calculate distance from center (delta)
-        // 2. Snap this delta to nearest grid multiple
-        // 3. Re-apply center offset
         const snapToCenter = (val: number, center: number) => {
             const rel = val - center;
             const snappedRel = Math.round(rel / gridSize) * gridSize;
@@ -785,7 +790,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
       if (exportConfig?.isActive) return;
 
-      for (const layerId of [6, 5, 4, 3, 2, 1, 0]) {
+      // Hit test loop for 9 layers (Top to Bottom: 8 -> 0)
+      for (const layerId of [8, 7, 6, 5, 4, 3, 2, 1, 0]) {
           const pt = getNormalizedLocalPoint(e, layerId);
           const hitStroke = hitTest(pt, layerId);
           if (hitStroke && onColorPick) {
@@ -803,9 +809,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         return; 
     }
     
-    // Removed isPlaying block to allow drawing while playing
-    // if (isPlaying && isMobile) return; 
-
     if (isEmbedMode && isMobile) {
         isDraggingView.current = true;
         return;
@@ -862,7 +865,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       return strokes;
   };
 
-  // Note: Standard handlePointerMove is not attached to the div anymore for drawing, only for embed dragging
   const handlePointerMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (isEmbedMode && containerRef.current) {
          let clientX, clientY;
@@ -883,8 +885,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         
         if (isEmbedMode && isMobile && 'touches' in e) return;
     }
-
-    // Standard drawing move is handled by window listener in useEffect
   };
 
   const handlePointerUp = () => {
@@ -892,7 +892,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         isDraggingView.current = false;
         return;
     }
-    // Standard drawing up is handled by window listener in useEffect
   };
 
   return (
@@ -903,7 +902,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             onMouseDown={handlePointerDown}
             onMouseMove={handlePointerMove}
             onMouseUp={handlePointerUp}
-            // onMouseLeave removed to allow drawing outside
             onTouchStart={handlePointerDown}
             onTouchMove={handlePointerMove}
             onTouchEnd={handlePointerUp}
@@ -913,7 +911,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 backgroundColor: backgroundColor 
             }}
         >
-        {[0, 1, 2, 3, 4, 5, 6].map(layerIndex => {
+        {/* Render 9 layers */}
+        {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(layerIndex => {
             let effectiveBlur = 0;
             const manualBlur = (layerBlurStrengths && layerBlurStrengths[layerIndex]) || 0;
 
@@ -948,11 +947,23 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 </div>
             );
         })}
-        {/* Visual Indicator for View Lock */}
-        {isViewLocked.current && (
-             <div className="absolute top-4 right-4 pointer-events-none px-3 py-1 bg-[var(--active-color)] text-white text-xs font-bold rounded-full opacity-70 animate-pulse shadow-lg">
-                 VIEW LOCKED
+        {/* Visual Indicators for View Lock */}
+        {isLockedUI && (
+            <>
+             <div className="absolute top-4 right-4 pointer-events-none opacity-60" style={{ color: '#d5cdb4' }}>
+                 <Icons.Lock size={24} />
              </div>
+             {/* Origin Dot Indicator */}
+             <div 
+                className="absolute w-2 h-2 rounded-full pointer-events-none transform -translate-x-1/2 -translate-y-1/2"
+                style={{ 
+                    backgroundColor: '#d5cdb4', 
+                    opacity: 0.6,
+                    left: `${((lockedOffset.current.x + 1) / 2) * 100}%`,
+                    top: `${((lockedOffset.current.y + 1) / 2) * 100}%`
+                }}
+             />
+            </>
         )}
         </div>
         

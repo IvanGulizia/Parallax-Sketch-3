@@ -8,8 +8,8 @@ interface LayerSliderProps {
 }
 
 export const LayerSlider: React.FC<LayerSliderProps> = ({ activeLayer, onChange, onSwap }) => {
-  // Layers 0 (Back) to 6 (Front) - Visual Order Top to Bottom is 6 -> 0
-  const layers = [6, 5, 4, 3, 2, 1, 0]; 
+  // Layers 0 (Back) to 8 (Front) - Visual Order Top to Bottom is 8 -> 0
+  const layers = [8, 7, 6, 5, 4, 3, 2, 1, 0]; 
   
   const [draggedLayer, setDraggedLayer] = useState<number | null>(null);
 
@@ -60,7 +60,7 @@ export const LayerSlider: React.FC<LayerSliderProps> = ({ activeLayer, onChange,
                 onChange(layerIndex);
             }}
             className="relative z-10 w-full flex items-center justify-center cursor-pointer group py-1"
-            title={`Layer ${layerIndex} ${layerIndex === 0 ? '(Back)' : layerIndex === 6 ? '(Front)' : ''}`}
+            title={`Layer ${layerIndex} ${layerIndex === 0 ? '(Back)' : layerIndex === 8 ? '(Front)' : ''}`}
           >
              {/* Indicator Dot */}
              <div 

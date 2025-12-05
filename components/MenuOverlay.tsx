@@ -71,6 +71,7 @@ interface MenuOverlayProps {
   uiTheme: UITheme;
   isGridEnabled: boolean;
   isSnappingEnabled: boolean;
+  isParallaxSnappingEnabled: boolean; // New Prop
   gridSize: number;
   symmetryMode: SymmetryMode;
   useGyroscope: boolean;
@@ -97,6 +98,7 @@ interface MenuOverlayProps {
   onUIThemeChange: (theme: UITheme) => void;
   onGridEnabledChange: (val: boolean) => void;
   onSnappingEnabledChange: (val: boolean) => void;
+  onParallaxSnappingEnabledChange: (val: boolean) => void; // New Handler
   onGridSizeChange: (val: number) => void;
   onSymmetryModeChange: (val: SymmetryMode) => void;
   onUseGyroscopeChange: (val: boolean) => void;
@@ -123,6 +125,7 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
     uiTheme,
     isGridEnabled,
     isSnappingEnabled,
+    isParallaxSnappingEnabled, // Destructure
     gridSize,
     symmetryMode,
     useGyroscope,
@@ -149,6 +152,7 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
     onUIThemeChange,
     onGridEnabledChange,
     onSnappingEnabledChange,
+    onParallaxSnappingEnabledChange, // Destructure
     onGridSizeChange,
     onSymmetryModeChange,
     onUseGyroscopeChange,
@@ -227,6 +231,7 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
       // Grid & Canvas & Symmetry
       url.searchParams.set('grid', isGridEnabled.toString());
       url.searchParams.set('snap', isSnappingEnabled.toString());
+      url.searchParams.set('snapParallax', isParallaxSnappingEnabled.toString()); // Export setting
       url.searchParams.set('gridSize', gridSize.toString());
       url.searchParams.set('width', canvasWidth.toString());
       url.searchParams.set('symmetry', symmetryMode);
@@ -356,7 +361,7 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
                 <ControlRow label="Focal Layer">
                      <div className="w-32">
                         <Slider 
-                            min={0} max={6} step={1}
+                            min={0} max={8} step={1}
                             value={focalLayerIndex} 
                             onChange={onFocalLayerChange}
                         />
@@ -463,6 +468,13 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
                                 label={isSnappingEnabled ? 'Active' : 'Disabled'}
                             />
                          </ControlRow>
+                         <ControlRow label="Parallax Snap">
+                             <ToggleBtn 
+                                checked={isParallaxSnappingEnabled} 
+                                onChange={() => onParallaxSnappingEnabledChange(!isParallaxSnappingEnabled)} 
+                                label={isParallaxSnappingEnabled ? 'Active' : 'Disabled'}
+                            />
+                         </ControlRow>
                          <ControlRow label={`Size (${gridSize}px)`}>
                             <div className="w-32">
                                 <Slider 
@@ -547,8 +559,8 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
         <div>
             <SectionTitle>Share & Export</SectionTitle>
             <div className="grid grid-cols-2 gap-3">
-                 <label className="flex flex-col items-center justify-center p-4 rounded-xl bg-[var(--tool-bg)] border border-[var(--border-color)] hover:border-[var(--active-color)] hover:bg-[var(--secondary-bg)] transition-all cursor-pointer group">
-                    <Icons.Upload size={20} className="text-[var(--icon-color)] mb-1 group-hover:text-[var(--active-color)]" />
+                 <label className="flex flex-col items-center justify-center p-4 rounded-xl bg-[var(--tool-bg)] border border-[var(--border-color)] hover:bg-[var(--secondary-bg)] transition-all cursor-pointer group">
+                    <Icons.Upload size={20} className="text-[var(--icon-color)] mb-1" />
                     <span className="text-[10px] font-medium text-[var(--text-color)]">Import JSON</span>
                     <input type="file" accept=".json" onChange={onImport} className="hidden" />
                  </label>
@@ -570,9 +582,9 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
 
                  <button 
                     onClick={onExport}
-                    className="flex flex-col items-center justify-center p-4 rounded-xl bg-[var(--tool-bg)] border border-[var(--border-color)] hover:border-[var(--active-color)] hover:bg-[var(--secondary-bg)] transition-all group"
+                    className="flex flex-col items-center justify-center p-4 rounded-xl bg-[var(--tool-bg)] border border-[var(--border-color)] hover:bg-[var(--secondary-bg)] transition-all group"
                  >
-                    <Icons.Download size={20} className="text-[var(--icon-color)] mb-1 group-hover:text-[var(--active-color)]" />
+                    <Icons.Download size={20} className="text-[var(--icon-color)] mb-1" />
                     <span className="text-[10px] font-medium text-[var(--text-color)]">Download JSON</span>
                  </button>
 
@@ -673,23 +685,6 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
             {showShare && (
                  <div ref={shareSectionRef} className="mt-3 p-4 bg-[var(--tool-bg)] rounded-xl border border-[var(--border-color)] animate-in fade-in space-y-6">
                     
-                    {/* General Options */}
-                    <div className="space-y-2">
-                        <span className="text-[10px] font-bold uppercase tracking-wide opacity-50 block">Embed Options</span>
-                        <div className="flex items-center gap-4">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" checked={shareTransparent} onChange={(e) => setShareTransparent(e.target.checked)} />
-                                <span className="text-[10px] text-[var(--text-color)]">Transparent BG</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" checked={showUIHint} onChange={(e) => setShowUIHint(e.target.checked)} />
-                                <span className="text-[10px] text-[var(--text-color)]">Show UI Hint</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <Separator />
-
                     {/* Host & Share Workflow */}
                     <div className="space-y-4">
                         <span className="text-[10px] font-bold uppercase tracking-wide opacity-50 block">Host & Share (Reliable)</span>
