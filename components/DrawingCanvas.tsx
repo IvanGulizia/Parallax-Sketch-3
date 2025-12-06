@@ -49,7 +49,8 @@ interface DrawingCanvasProps {
   viewLockTrigger?: { type: 'LOCK' | 'RESET' | 'UNLOCK', ts: number };
 }
 
-const OVERSCAN_MARGIN = 800; // Increased for "Infinite Canvas" feel
+// Increased Margin to support 1:1 mapping on large screens without clipping
+const OVERSCAN_MARGIN = 1500; 
 
 export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   activeTool,
@@ -59,8 +60,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   activeSecondaryColorSlot,
   activeBlendMode,
   activeFillBlendMode,
-  isFillEnabled,
-  isStrokeEnabled,
+  isFillEnabled: isFillEnabled,
+  isStrokeEnabled: isStrokeEnabled,
   palette,
   parallaxStrength,
   parallaxInverted,
@@ -205,15 +206,28 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       return Math.max(0.1, dimensions.width / 1000);
   }, [dimensions.width]);
 
-  // --- Helper: Calculate Layer Offset (Including Snapping) ---
+  // --- Helper: Calculate Layer Offset (Calibrated 1:1) ---
   const calculateLayerOffset = useCallback((layerIndex: number, currentX: number, currentY: number) => {
-        const maxPx = (parallaxStrength / 100) * OVERSCAN_MARGIN;
+        if (dimensions.width === 0 || dimensions.height === 0) return { x: 0, y: 0 };
+
         const direction = parallaxInverted ? -1 : 1;
-        const relativeDepth = (layerIndex - focalLayerIndex) * 0.5;
         
-        // Base pixel offsets
-        let offX = -currentX * maxPx * relativeDepth * direction;
-        let offY = -currentY * maxPx * relativeDepth * direction;
+        // --- CALIBRATION LOGIC ---
+        // 1. Determine relative depth normalized to the stack size (4 layers from center to front)
+        // This ensures the "Front" layer (dist 4) has a depthFactor of 1.0
+        const maxLayerDist = 4.0;
+        const depthFactor = (layerIndex - focalLayerIndex) / maxLayerDist;
+
+        // 2. Strength Factor: We want 50% strength to equal a 1.0 multiplier
+        const strengthFactor = parallaxStrength / 50.0;
+
+        // 3. Base Pixel Offset: 1:1 mapping means moving from center to edge moves the layer by half screen width
+        const maxOffsetX = dimensions.width / 2;
+        const maxOffsetY = dimensions.height / 2;
+        
+        // 4. Calculate final offset
+        let offX = -currentX * maxOffsetX * depthFactor * strengthFactor * direction;
+        let offY = -currentY * maxOffsetY * depthFactor * strengthFactor * direction;
 
         // Apply Parallax Movement Snapping Logic
         if (isGridEnabled && isParallaxSnappingEnabled) {
@@ -222,7 +236,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         }
 
         return { x: offX, y: offY };
-  }, [parallaxStrength, parallaxInverted, focalLayerIndex, isGridEnabled, isParallaxSnappingEnabled, gridSize]);
+  }, [parallaxStrength, parallaxInverted, focalLayerIndex, isGridEnabled, isParallaxSnappingEnabled, gridSize, dimensions]);
 
   // --- Rendering ---
   const renderLayer = useCallback((layerIndex: number) => {
