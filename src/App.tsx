@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Toolbar } from './components/Toolbar';
 import { LayerSlider } from './components/LayerSlider';
@@ -203,7 +202,7 @@ export default function App() {
     // Grid
     isGridEnabled: false,
     isSnappingEnabled: true,
-    isParallaxSnappingEnabled: false, // ADDED THIS
+    isParallaxSnappingEnabled: false,
     gridSize: 40,
     symmetryMode: SymmetryMode.NONE,
     

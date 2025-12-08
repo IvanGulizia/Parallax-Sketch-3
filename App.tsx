@@ -203,6 +203,7 @@ export default function App() {
     // Grid
     isGridEnabled: false,
     isSnappingEnabled: true,
+    isParallaxSnappingEnabled: false,
     gridSize: 40,
     symmetryMode: SymmetryMode.NONE,
     
@@ -856,6 +857,7 @@ export default function App() {
                     layerBlendModes={state.layerBlendModes}
                     isGridEnabled={state.isGridEnabled}
                     isSnappingEnabled={state.isSnappingEnabled}
+                    isParallaxSnappingEnabled={state.isParallaxSnappingEnabled} // Added Prop
                     gridSize={state.gridSize}
                     symmetryMode={state.symmetryMode}
                     useGyroscope={state.useGyroscope}
