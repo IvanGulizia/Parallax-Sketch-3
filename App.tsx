@@ -363,7 +363,13 @@ export default function App() {
       else if (data.strokes) {
           setHistory([data.strokes]);
           setHistoryIndex(0);
-          setState(s => ({ ...s, ...data.config, palette: data.palette || s.palette }));
+          setState(s => ({ 
+              ...s, 
+              ...data.config, 
+              // Ensure canvasBackgroundColor is loaded correctly from either key
+              canvasBackgroundColor: data.config.canvasBackgroundColor || data.config.backgroundColor || s.canvasBackgroundColor,
+              palette: data.palette || s.palette 
+          }));
       }
   };
 
@@ -698,6 +704,7 @@ export default function App() {
             focalLayerIndex: state.focalLayerIndex,
             springConfig: state.springConfig,
             backgroundColor: state.canvasBackgroundColor,
+            canvasBackgroundColor: state.canvasBackgroundColor, // Added for consistency
             globalLayerBlendMode: state.globalLayerBlendMode,
             canvasWidth: state.canvasWidth,
             layerBlendModes: state.layerBlendModes,
