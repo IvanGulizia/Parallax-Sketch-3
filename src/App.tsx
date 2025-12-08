@@ -119,7 +119,19 @@ const DEFAULT_SHORTCUTS: ShortcutConfig = {
         'TOGGLE_GYRO': [],
         'TOGGLE_MENU': [],
         'EXPORT': [{ key: 'e' }],
-        'TOGGLE_DEBUG': [{ key: 'h' }]
+        'TOGGLE_DEBUG': [{ key: 'h' }],
+        'LOCK_VIEW': [{ key: 'l' }],
+        'RESET_VIEW': [{ key: 'k' }],
+        'DOF_INC': [{ key: 'ArrowRight' }],
+        'DOF_DEC': [{ key: 'ArrowLeft' }],
+        'INVERT_PARALLAX': [{ key: 'i' }],
+        'BLEND_MODE_NEXT': [{ key: 'o' }],
+        'TOGGLE_GRID': [{ key: 'g' }],
+        'SYMMETRY_NEXT': [{ key: 'f' }],
+        'COLOR_SLOT_NEXT': [{ key: 'x' }],
+        'COLOR_SLOT_PREV': [{ key: 'y' }],
+        'RANDOM_LAYER': [{ key: '0' }],
+        'RANDOM_COLOR': [{ key: '8' }]
     },
     embed: {
         'UNDO': [],
@@ -142,7 +154,19 @@ const DEFAULT_SHORTCUTS: ShortcutConfig = {
         'TOGGLE_GYRO': [{ key: 'a' }, { key: 'ArrowLeft' }],
         'TOGGLE_MENU': [{ key: 'm' }],
         'EXPORT': [],
-        'TOGGLE_DEBUG': [{ key: 'h' }]
+        'TOGGLE_DEBUG': [{ key: 'h' }],
+        'LOCK_VIEW': [],
+        'RESET_VIEW': [],
+        'DOF_INC': [],
+        'DOF_DEC': [],
+        'INVERT_PARALLAX': [],
+        'BLEND_MODE_NEXT': [],
+        'TOGGLE_GRID': [],
+        'SYMMETRY_NEXT': [],
+        'COLOR_SLOT_NEXT': [],
+        'COLOR_SLOT_PREV': [],
+        'RANDOM_LAYER': [],
+        'RANDOM_COLOR': []
     }
 };
 
@@ -179,6 +203,7 @@ export default function App() {
     // Grid
     isGridEnabled: false,
     isSnappingEnabled: true,
+    isParallaxSnappingEnabled: false, // ADDED THIS
     gridSize: 40,
     symmetryMode: SymmetryMode.NONE,
     
@@ -234,6 +259,9 @@ export default function App() {
   const [currentStrokes, setCurrentStrokes] = useState<Stroke[]>([]);
   const [showEmbedShortcuts, setShowEmbedShortcuts] = useState(false);
   const lastTap = useRef<number>(0);
+
+  // New state for View Lock
+  const [viewLockTrigger, setViewLockTrigger] = useState<{ type: 'LOCK' | 'RESET' | 'UNLOCK', ts: number } | undefined>(undefined);
 
   // Sync history with current strokes on load or undo/redo
   useEffect(() => {
@@ -336,7 +364,13 @@ export default function App() {
       else if (data.strokes) {
           setHistory([data.strokes]);
           setHistoryIndex(0);
-          setState(s => ({ ...s, ...data.config, palette: data.palette || s.palette }));
+          setState(s => ({ 
+              ...s, 
+              ...data.config, 
+              // Ensure canvasBackgroundColor is loaded correctly from either key
+              canvasBackgroundColor: data.config.canvasBackgroundColor || data.config.backgroundColor || s.canvasBackgroundColor,
+              palette: data.palette || s.palette 
+          }));
       }
   };
 
@@ -350,7 +384,11 @@ export default function App() {
   };
   
   const handleExport = () => {
-    const data = JSON.stringify({ 
+      const filename = window.prompt("Enter filename for export:", "zen-sketch");
+      if (filename === null) return; // User cancelled
+      
+      const safeFilename = filename.trim() || "zen-sketch";
+      const data = JSON.stringify({ 
         version: 7,
         palette: state.palette,
         strokes: currentStrokes,
@@ -373,7 +411,7 @@ export default function App() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'zen-sketch.json';
+    a.download = `${safeFilename}.json`;
     a.click();
   };
 
@@ -422,6 +460,17 @@ export default function App() {
           activeLayer: toLayer, // Move selection to the dropped location
           layerBlendModes: swap(prev.layerBlendModes),
           layerBlurStrengths: swap(prev.layerBlurStrengths)
+      }));
+  };
+
+  // Color Pick with Sync Fix
+  const handleColorPick = (slotIndex: number) => {
+      setState(s => ({ 
+          ...s, 
+          activeColorSlot: slotIndex, 
+          // If synced, update secondary too. If not, leave it alone.
+          activeSecondaryColorSlot: s.isColorSynced ? slotIndex : s.activeSecondaryColorSlot,
+          activeTool: ToolType.BRUSH 
       }));
   };
 
@@ -484,6 +533,49 @@ export default function App() {
                   case 'COLOR_5': handleColorPick(4); break;
                   case 'COLOR_6': handleColorPick(5); break;
                   case 'COLOR_7': handleColorPick(6); break;
+
+                  case 'LOCK_VIEW': setViewLockTrigger({ type: 'LOCK', ts: Date.now() }); break;
+                  case 'RESET_VIEW': setViewLockTrigger({ type: 'RESET', ts: Date.now() }); break;
+                  case 'DOF_INC': setState(s => ({ ...s, blurStrength: Math.min(20, s.blurStrength + 1) })); break;
+                  case 'DOF_DEC': setState(s => ({ ...s, blurStrength: Math.max(0, s.blurStrength - 1) })); break;
+                  case 'INVERT_PARALLAX': setState(s => ({ ...s, parallaxInverted: !s.parallaxInverted })); break;
+                  case 'BLEND_MODE_NEXT': {
+                      const modes: BlendMode[] = ['normal', 'multiply', 'overlay', 'difference'];
+                      setState(s => {
+                          const idx = modes.indexOf(s.activeBlendMode);
+                          return { ...s, activeBlendMode: modes[(idx + 1) % modes.length] };
+                      });
+                      break;
+                  }
+                  case 'TOGGLE_GRID': setState(s => ({ ...s, isGridEnabled: !s.isGridEnabled })); break;
+                  case 'SYMMETRY_NEXT': {
+                      const modes = [SymmetryMode.NONE, SymmetryMode.HORIZONTAL, SymmetryMode.VERTICAL, SymmetryMode.QUAD, SymmetryMode.CENTRAL];
+                      setState(s => {
+                          const idx = modes.indexOf(s.symmetryMode);
+                          return { ...s, symmetryMode: modes[(idx + 1) % modes.length] };
+                      });
+                      break;
+                  }
+                  case 'COLOR_SLOT_NEXT': {
+                       setState(s => {
+                           const next = (s.activeColorSlot + 1) % 7;
+                           return { ...s, activeColorSlot: next, activeSecondaryColorSlot: s.isColorSynced ? next : s.activeSecondaryColorSlot };
+                       });
+                       break;
+                  }
+                  case 'COLOR_SLOT_PREV': {
+                       setState(s => {
+                           const prev = (s.activeColorSlot - 1 + 7) % 7;
+                           return { ...s, activeColorSlot: prev, activeSecondaryColorSlot: s.isColorSynced ? prev : s.activeSecondaryColorSlot };
+                       });
+                       break;
+                  }
+                  case 'RANDOM_LAYER': setState(s => ({ ...s, activeLayer: Math.floor(Math.random() * 7) })); break;
+                  case 'RANDOM_COLOR': {
+                       const slot = Math.floor(Math.random() * 7);
+                       handleColorPick(slot);
+                       break;
+                  }
               }
           }
       };
@@ -521,20 +613,30 @@ export default function App() {
       };
   }, [state, shortcutConfig]);
 
-  // Color Pick with Sync Fix
-  const handleColorPick = (slotIndex: number) => {
-      setState(s => ({ 
-          ...s, 
-          activeColorSlot: slotIndex, 
-          // If synced, update secondary too. If not, leave it alone.
-          activeSecondaryColorSlot: s.isColorSynced ? slotIndex : s.activeSecondaryColorSlot,
-          activeTool: ToolType.BRUSH 
-      }));
-  };
-
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('mode') === 'embed') {
+    
+    // --- LOAD FROM SUPABASE SHARE ID ---
+    const sharedId = params.get('id');
+    if (sharedId) {
+        // Fetch the drawing from our Serverless Function
+        fetch(`/api/get-drawing?id=${sharedId}`)
+            .then(res => {
+                if (!res.ok) throw new Error("Drawing not found");
+                return res.json();
+            })
+            .then(data => {
+                const isEmbed = params.get('mode') === 'embed';
+                loadData(data, isEmbed && params.get('bg') === 'transparent');
+                if (isEmbed) {
+                    setState(s => ({ ...s, isEmbedMode: true, isPlaying: true }));
+                }
+            })
+            .catch(err => console.error("Failed to load shared drawing", err));
+    }
+
+    // Existing Embed Logic
+    if (params.get('mode') === 'embed' && !sharedId) {
         const isTransparent = params.get('bg') === 'transparent';
         const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         
@@ -593,8 +695,26 @@ export default function App() {
   };
 
   const getEncodedState = useCallback(() => {
-     // ... (Existing implementation)
-     return ""; 
+     return JSON.stringify({ 
+        version: 7,
+        palette: state.palette,
+        strokes: currentStrokes,
+        config: {
+            parallaxStrength: state.parallaxStrength,
+            parallaxInverted: state.parallaxInverted,
+            focalLayerIndex: state.focalLayerIndex,
+            springConfig: state.springConfig,
+            backgroundColor: state.canvasBackgroundColor,
+            canvasBackgroundColor: state.canvasBackgroundColor, // Added for consistency
+            globalLayerBlendMode: state.globalLayerBlendMode,
+            canvasWidth: state.canvasWidth,
+            layerBlendModes: state.layerBlendModes,
+            layerBlurStrengths: state.layerBlurStrengths,
+            blurStrength: state.blurStrength,
+            focusRange: state.focusRange,
+            symmetryMode: state.symmetryMode
+        }
+    }); 
   }, [currentStrokes, state]);
 
   // Embed Styling Logic
@@ -737,6 +857,7 @@ export default function App() {
                     layerBlendModes={state.layerBlendModes}
                     isGridEnabled={state.isGridEnabled}
                     isSnappingEnabled={state.isSnappingEnabled}
+                    isParallaxSnappingEnabled={state.isParallaxSnappingEnabled} // Added Prop
                     gridSize={state.gridSize}
                     symmetryMode={state.symmetryMode}
                     useGyroscope={state.useGyroscope}
@@ -756,6 +877,7 @@ export default function App() {
                     onEmbedContextMenu={() => setShowEmbedShortcuts(true)}
                     layerBlurStrengths={state.layerBlurStrengths}
                     guideColor={state.uiTheme.visualGuides} // Passed new color prop
+                    viewLockTrigger={viewLockTrigger}
                 />
             </div>
             
