@@ -26,7 +26,7 @@ const PRESET_PALETTES = [
     ['#fff100', '#ff8c00', '#e81123', '#ec008c', '#68217a', '#00188f', '#00bcf2'],
     ['#dad7cd', '#a3b18a', '#588157', '#3a5a40', '#344e41', '#3a0ca3', '#4361ee'],
     ['#000000', '#14213d', '#fca311', '#e5e5e5', '#ffffff', '#e0e1dd', '#778da9'],
-    ['#cdb4db', '#ffc8dd', '#ffc8dd', '#bde0fe', '#a2d2ff', '#8d99ae', '#2b2d42'],
+    ['#cdb4db', '#ffc8dd', '#ffafcc', '#bde0fe', '#a2d2ff', '#8d99ae', '#2b2d42'],
     ['#7400b8', '#6930c3', '#5e60ce', '#5390d9', '#4ea8de', '#48bfe3', '#56cfe1'],
     ['#e63946', '#f1faee', '#a8dadc', '#457b9d', '#1d3557', '#457b9d', '#a8dadc'],
     ['#f8f9fa', '#e9ecef', '#dee2e6', '#ced4da', '#adb5bd', '#6c757d', '#495057'],
@@ -49,17 +49,9 @@ const ShortcutsOverlay = ({ onClose, isEmbed }: { onClose: () => void, isEmbed: 
                     <span>Play / Pause</span>
                     <div className="flex gap-1"><kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">Space</kbd></div>
                 </div>
-                 <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-                    <span>Active Layer</span>
-                    <div className="flex gap-1"><kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">W</kbd> / <kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">S</kbd></div>
-                </div>
                 <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-                    <span>Cycle Palette</span>
-                    <div className="flex gap-1"><kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">A</kbd> / <kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">D</kbd></div>
-                </div>
-                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-                    <span>Cycle Color</span>
-                    <div className="flex gap-1"><kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">X</kbd> / <kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">Y</kbd></div>
+                    <span>Select Color</span>
+                    <div className="flex gap-1"><kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">1</kbd>...<kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">7</kbd></div>
                 </div>
                 {!isEmbed && (
                     <>
@@ -68,93 +60,113 @@ const ShortcutsOverlay = ({ onClose, isEmbed }: { onClose: () => void, isEmbed: 
                             <div className="flex gap-1"><kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">Cmd+Z</kbd> / <kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">Cmd+Shift+Z</kbd></div>
                         </div>
                         <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-                            <span>Lock View</span>
-                            <div className="flex gap-1"><kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">L</kbd> / <kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">K</kbd></div>
-                        </div>
-                        <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-                            <span>Toggle Grid</span>
-                            <div className="flex gap-1"><kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">G</kbd></div>
+                            <span>Export JSON</span>
+                            <div className="flex gap-1"><kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">E</kbd></div>
                         </div>
                     </>
                 )}
+                {isEmbed && (
+                    <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                        <span>Menu / Help</span>
+                        <div className="flex gap-1"><kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">M</kbd></div>
+                    </div>
+                )}
                 <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                    <span>Pick Color</span>
+                    <div className="flex gap-1"><span className="text-xs italic">Right Click</span></div>
+                </div>
+                <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                    <span>Prev / Next Palette</span>
+                    <div className="flex gap-1"><kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">A</kbd> / <kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">D</kbd></div>
+                </div>
+                 <div className="flex justify-between items-center pb-2 border-b border-gray-100">
                     <span>Focus Layer</span>
+                    <div className="flex gap-1"><kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">W</kbd> / <kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">S</kbd></div>
+                </div>
+                 <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                    <span>Active Layer</span>
                     <div className="flex gap-1"><Icons.ArrowUp size={12}/> / <Icons.ArrowDown size={12}/></div>
                 </div>
                 <div className="flex justify-between items-center">
                     <span>Depth of Field</span>
-                    <div className="flex gap-1"><Icons.ArrowRight size={12}/> / <Icons.ArrowLeft size={12}/></div>
+                    <div className="flex gap-1"><span className="text-xs italic">Shift + Scroll</span> {isEmbed && <span>or <span className="text-xs italic">Pinch</span></span>}</div>
                 </div>
             </div>
         </div>
     </div>
 );
 
-// Define default shortcuts based on new requirements
+// Define default shortcuts
 const DEFAULT_SHORTCUTS: ShortcutConfig = {
     creation: {
         'UNDO': [{ key: 'z', meta: true }],
         'REDO': [{ key: 'z', meta: true, shift: true }],
         'PLAY_PAUSE': [{ key: ' ' }],
         'RESET': [{ key: 'r' }],
+        'COLOR_1': [{ key: '1' }],
+        'COLOR_2': [{ key: '2' }],
+        'COLOR_3': [{ key: '3' }],
+        'COLOR_4': [{ key: '4' }],
+        'COLOR_5': [{ key: '5' }],
+        'COLOR_6': [{ key: '6' }],
+        'COLOR_7': [{ key: '7' }],
+        'PREV_PALETTE': [{ key: 'a' }],
+        'NEXT_PALETTE': [{ key: 'd' }],
+        'LAYER_NEXT': [{ key: 'ArrowUp' }], // Front
+        'LAYER_PREV': [{ key: 'ArrowDown' }], // Back
+        'FOCUS_NEXT': [{ key: 's' }], // Front
+        'FOCUS_PREV': [{ key: 'w' }], // Back
+        'TOGGLE_GYRO': [],
+        'TOGGLE_MENU': [],
         'EXPORT': [{ key: 'e' }],
-        'TOGGLE_MENU': [{ key: 'm' }],
         'TOGGLE_DEBUG': [{ key: 'h' }],
-        
-        // Navigation
-        'LAYER_NEXT': [{ key: 'w' }],
-        'LAYER_PREV': [{ key: 's' }],
-        'FOCUS_NEXT': [{ key: 'ArrowUp' }],
-        'FOCUS_PREV': [{ key: 'ArrowDown' }],
-        
-        // Colors
-        'NEXT_PALETTE': [{ key: 'a' }],
-        'PREV_PALETTE': [{ key: 'd' }],
-        'COLOR_SLOT_NEXT': [{ key: 'x' }],
-        'COLOR_SLOT_PREV': [{ key: 'y' }],
-        'COLOR_1': [], 'COLOR_2': [], 'COLOR_3': [], 'COLOR_4': [], 'COLOR_5': [], 'COLOR_6': [], 'COLOR_7': [],
-        'RANDOM_COLOR': [{ key: '8' }], // Random Color
-
-        // Visuals & Physics
-        'DOF_INC': [{ key: 'ArrowRight' }],
-        'DOF_DEC': [{ key: 'ArrowLeft' }],
-        'INVERT_PARALLAX': [{ key: 'i' }],
-        'BLEND_MODE_NEXT': [{ key: 'o' }],
-        'TOGGLE_GRID': [{ key: 'g' }], // Changed to G
-        'SYMMETRY_NEXT': [{ key: 'f' }],
         'LOCK_VIEW': [{ key: 'l' }],
         'RESET_VIEW': [{ key: 'k' }],
-        'RANDOM_LAYER': [{ key: '0' }], // Random Layer
-        
-        'TOGGLE_GYRO': []
-    },
-    embed: {
-        'UNDO': [], 'REDO': [],
-        'PLAY_PAUSE': [{ key: ' ' }],
-        'RESET': [{ key: 'r' }],
-        'EXPORT': [],
-        'TOGGLE_MENU': [{ key: 'm' }],
-        'TOGGLE_DEBUG': [{ key: 'h' }],
-        'LAYER_NEXT': [{ key: 'w' }],
-        'LAYER_PREV': [{ key: 's' }],
-        'FOCUS_NEXT': [{ key: 'ArrowUp' }],
-        'FOCUS_PREV': [{ key: 'ArrowDown' }],
-        'NEXT_PALETTE': [{ key: 'a' }],
-        'PREV_PALETTE': [{ key: 'd' }],
-        'COLOR_SLOT_NEXT': [{ key: 'x' }],
-        'COLOR_SLOT_PREV': [{ key: 'y' }],
-        'COLOR_1': [], 'COLOR_2': [], 'COLOR_3': [], 'COLOR_4': [], 'COLOR_5': [], 'COLOR_6': [], 'COLOR_7': [],
-        'RANDOM_COLOR': [],
         'DOF_INC': [{ key: 'ArrowRight' }],
         'DOF_DEC': [{ key: 'ArrowLeft' }],
         'INVERT_PARALLAX': [{ key: 'i' }],
         'BLEND_MODE_NEXT': [{ key: 'o' }],
-        'TOGGLE_GRID': [{ key: 'g' }], // Changed to G
+        'TOGGLE_GRID': [{ key: 'g' }],
         'SYMMETRY_NEXT': [{ key: 'f' }],
+        'COLOR_SLOT_NEXT': [{ key: 'x' }],
+        'COLOR_SLOT_PREV': [{ key: 'y' }],
+        'RANDOM_LAYER': [{ key: '0' }],
+        'RANDOM_COLOR': [{ key: '8' }]
+    },
+    embed: {
+        'UNDO': [],
+        'REDO': [],
+        'PLAY_PAUSE': [{ key: ' ' }],
+        'RESET': [{ key: 'r' }],
+        'COLOR_1': [{ key: '1' }],
+        'COLOR_2': [{ key: '2' }],
+        'COLOR_3': [{ key: '3' }],
+        'COLOR_4': [{ key: '4' }],
+        'COLOR_5': [{ key: '5' }],
+        'COLOR_6': [{ key: '6' }],
+        'COLOR_7': [{ key: '7' }],
+        'PREV_PALETTE': [],
+        'NEXT_PALETTE': [{ key: 'd' }, { key: 'ArrowRight' }],
+        'LAYER_NEXT': [{ key: 'ArrowUp' }],
+        'LAYER_PREV': [{ key: 'ArrowDown' }],
+        'FOCUS_NEXT': [{ key: 's' }],
+        'FOCUS_PREV': [{ key: 'w' }],
+        'TOGGLE_GYRO': [{ key: 'a' }, { key: 'ArrowLeft' }],
+        'TOGGLE_MENU': [{ key: 'm' }],
+        'EXPORT': [],
+        'TOGGLE_DEBUG': [{ key: 'h' }],
         'LOCK_VIEW': [],
         'RESET_VIEW': [],
+        'DOF_INC': [],
+        'DOF_DEC': [],
+        'INVERT_PARALLAX': [],
+        'BLEND_MODE_NEXT': [],
+        'TOGGLE_GRID': [],
+        'SYMMETRY_NEXT': [],
+        'COLOR_SLOT_NEXT': [],
+        'COLOR_SLOT_PREV': [],
         'RANDOM_LAYER': [],
-        'TOGGLE_GYRO': []
+        'RANDOM_COLOR': []
     }
 };
 
@@ -164,7 +176,7 @@ export default function App() {
 
   const [state, setState] = useState<AppState>({
     activeTool: ToolType.BRUSH,
-    activeLayer: 4, 
+    activeLayer: 3, 
     brushSize: 10,
     eraserSize: 30, // Default decoupled eraser size
     activeColorSlot: 0,
@@ -178,7 +190,7 @@ export default function App() {
     parallaxStrength: 10, 
     parallaxInverted: false,
     springConfig: { stiffness: 0.2, damping: 0.2 }, 
-    focalLayerIndex: 4, 
+    focalLayerIndex: 3, 
     isPlaying: false,
     useGyroscope: isMobile, 
     isLowPowerMode: true, 
@@ -188,21 +200,20 @@ export default function App() {
     canvasWidth: 100, 
     aspectRatio: null, 
     
-    // Grid Settings
+    // Grid
     isGridEnabled: false,
     isSnappingEnabled: true,
-    isParallaxSnappingEnabled: false,
     gridSize: 40,
     symmetryMode: SymmetryMode.NONE,
     
-    // Visual Settings
+    // Visual
     isOnionSkinEnabled: true,
     blurStrength: 0,
     focusRange: 0,
 
     globalLayerBlendMode: 'normal',
-    layerBlendModes: { 0: 'normal', 1: 'normal', 2: 'normal', 3: 'normal', 4: 'normal', 5: 'normal', 6: 'normal', 7: 'normal', 8: 'normal' },
-    layerBlurStrengths: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0 },
+    layerBlendModes: { 0: 'normal', 1: 'normal', 2: 'normal', 3: 'normal', 4: 'normal', 5: 'normal', 6: 'normal' },
+    layerBlurStrengths: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
     
     // CRITICAL: Updated UI Theme with strict source of truth
     uiTheme: {
@@ -246,8 +257,10 @@ export default function App() {
   const [historyIndex, setHistoryIndex] = useState(0);
   const [currentStrokes, setCurrentStrokes] = useState<Stroke[]>([]);
   const [showEmbedShortcuts, setShowEmbedShortcuts] = useState(false);
-  const [viewLockTrigger, setViewLockTrigger] = useState<{ type: 'LOCK' | 'RESET' | 'UNLOCK', ts: number }>({ type: 'RESET', ts: 0 });
   const lastTap = useRef<number>(0);
+
+  // New state for View Lock
+  const [viewLockTrigger, setViewLockTrigger] = useState<{ type: 'LOCK' | 'RESET' | 'UNLOCK', ts: number } | undefined>(undefined);
 
   // Sync history with current strokes on load or undo/redo
   useEffect(() => {
@@ -287,58 +300,32 @@ export default function App() {
       return () => window.removeEventListener('resize', updateSpacing);
   }, [state.uiTheme]);
 
-  // Global Context Menu Listener (Right Click)
-  useEffect(() => {
-      const handleGlobalContextMenu = (e: MouseEvent) => {
-          e.preventDefault(); 
-          // The Color Picker logic (hit test) is handled in DrawingCanvas via onContextMenu prop.
-          // This global handler ensures the browser menu doesn't appear even if clicked outside valid targets.
-      };
-      document.addEventListener('contextmenu', handleGlobalContextMenu);
-      return () => document.removeEventListener('contextmenu', handleGlobalContextMenu);
-  }, []);
-
   // Wheel handling
   useEffect(() => {
       const handleWheel = (e: WheelEvent) => {
+          if (e.shiftKey) {
+              e.preventDefault();
+              const sign = Math.sign(e.deltaY); 
+              const delta = sign > 0 ? -1 : 1; 
+              setState(s => ({ ...s, blurStrength: Math.max(0, Math.min(20, s.blurStrength + delta)) }));
+              return;
+          }
           if (state.isEmbedMode) return;
           if ((e.target as HTMLElement).closest('.menu-overlay-container')) return;
 
           e.preventDefault();
-          
-          if (state.isPlaying) {
-               // Play Mode: Scroll changes Focus Layer
-               if (Math.abs(e.deltaY) > 10) {
-                  setState(s => {
-                      const dir = e.deltaY > 0 ? -1 : 1;
-                      const next = Math.max(0, Math.min(8, s.focalLayerIndex + dir));
-                      if (next === s.focalLayerIndex) return s;
-                      return { ...s, focalLayerIndex: next };
-                  });
-              }
-          } else {
-              // Pause Mode
-              if (e.shiftKey) {
-                  // Shift + Scroll: Depth of Field
-                   const sign = Math.sign(e.deltaY); 
-                   const delta = sign > 0 ? -1 : 1; 
-                   setState(s => ({ ...s, blurStrength: Math.max(0, Math.min(20, s.blurStrength + delta)) }));
-              } else {
-                  // Standard Scroll: Select Layer
-                  if (Math.abs(e.deltaY) > 10) {
-                      setState(s => {
-                          const dir = e.deltaY > 0 ? -1 : 1;
-                          const next = Math.max(0, Math.min(8, s.activeLayer + dir));
-                          if (next === s.activeLayer) return s;
-                          return { ...s, activeLayer: next };
-                      });
-                  }
-              }
+          if (Math.abs(e.deltaY) > 10) {
+              setState(s => {
+                  const dir = e.deltaY > 0 ? -1 : 1;
+                  const next = Math.max(0, Math.min(6, s.activeLayer + dir));
+                  if (next === s.activeLayer) return s;
+                  return { ...s, activeLayer: next };
+              });
           }
       };
       window.addEventListener('wheel', handleWheel, { passive: false });
       return () => window.removeEventListener('wheel', handleWheel);
-  }, [state.isMenuOpen, state.isEmbedMode, state.isPlaying]);
+  }, [state.isMenuOpen, state.isEmbedMode]);
 
   const loadData = (data: any, isTransparent: boolean) => {
       if (!data) return;
@@ -369,8 +356,7 @@ export default function App() {
               canvasBackgroundColor: isTransparent ? 'transparent' : (data.c.bg ?? s.canvasBackgroundColor),
               blurStrength: data.c.bs ?? s.blurStrength,
               focusRange: data.c.fr ?? s.focusRange,
-              symmetryMode: data.c.sm ?? SymmetryMode.NONE,
-              isParallaxSnappingEnabled: data.c.pse ?? s.isParallaxSnappingEnabled
+              symmetryMode: data.c.sm ?? SymmetryMode.NONE
               }));
           }
       } 
@@ -389,23 +375,13 @@ export default function App() {
      }
      setState(s => ({ ...s, palette: PRESET_PALETTES[nextIndex] }));
   };
-
-  const handleCycleColorSlot = (direction: -1 | 1) => {
-      setState(s => ({
-          ...s,
-          activeColorSlot: (s.activeColorSlot + direction + 7) % 7, // 7 Colors
-          activeTool: ToolType.BRUSH
-      }));
-  };
   
   const handleExport = () => {
-    // Prompt for filename
-    const filename = prompt("Enter file name:", "zen-sketch");
-    if (filename === null) return; // User cancelled
-
-    const cleanName = filename.trim() || "zen-sketch";
-    
-    const data = JSON.stringify({ 
+      const filename = window.prompt("Enter filename for export:", "zen-sketch");
+      if (filename === null) return; // User cancelled
+      
+      const safeFilename = filename.trim() || "zen-sketch";
+      const data = JSON.stringify({ 
         version: 7,
         palette: state.palette,
         strokes: currentStrokes,
@@ -421,15 +397,14 @@ export default function App() {
             layerBlurStrengths: state.layerBlurStrengths,
             blurStrength: state.blurStrength,
             focusRange: state.focusRange,
-            symmetryMode: state.symmetryMode,
-            isParallaxSnappingEnabled: state.isParallaxSnappingEnabled
+            symmetryMode: state.symmetryMode
         }
     });
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${cleanName}.json`;
+    a.download = `${safeFilename}.json`;
     a.click();
   };
 
@@ -481,6 +456,17 @@ export default function App() {
       }));
   };
 
+  // Color Pick with Sync Fix
+  const handleColorPick = (slotIndex: number) => {
+      setState(s => ({ 
+          ...s, 
+          activeColorSlot: slotIndex, 
+          // If synced, update secondary too. If not, leave it alone.
+          activeSecondaryColorSlot: s.isColorSynced ? slotIndex : s.activeSecondaryColorSlot,
+          activeTool: ToolType.BRUSH 
+      }));
+  };
+
   // --- Input Handling Refactor ---
   useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -524,45 +510,15 @@ export default function App() {
                   case 'TOGGLE_DEBUG': setState(s => ({ ...s, isDebugOpen: !s.isDebugOpen })); break;
                   case 'TOGGLE_GYRO': setState(s => ({ ...s, useGyroscope: !s.useGyroscope })); break;
                   
-                  // New Mappings
-                  case 'NEXT_PALETTE': handleCyclePalette(1); break;
                   case 'PREV_PALETTE': handleCyclePalette(-1); break;
+                  case 'NEXT_PALETTE': handleCyclePalette(1); break;
                   
-                  case 'LAYER_NEXT': setState(s => ({ ...s, activeLayer: Math.min(8, s.activeLayer + 1) })); break;
+                  case 'LAYER_NEXT': setState(s => ({ ...s, activeLayer: Math.min(6, s.activeLayer + 1) })); break;
                   case 'LAYER_PREV': setState(s => ({ ...s, activeLayer: Math.max(0, s.activeLayer - 1) })); break;
                   
-                  case 'FOCUS_NEXT': setState(s => ({ ...s, focalLayerIndex: Math.min(8, s.focalLayerIndex + 1) })); break;
+                  case 'FOCUS_NEXT': setState(s => ({ ...s, focalLayerIndex: Math.min(6, s.focalLayerIndex + 1) })); break;
                   case 'FOCUS_PREV': setState(s => ({ ...s, focalLayerIndex: Math.max(0, s.focalLayerIndex - 1) })); break;
-
-                  case 'DOF_INC': setState(s => ({ ...s, blurStrength: Math.min(20, s.blurStrength + 1) })); break;
-                  case 'DOF_DEC': setState(s => ({ ...s, blurStrength: Math.max(0, s.blurStrength - 1) })); break;
                   
-                  case 'INVERT_PARALLAX': setState(s => ({ ...s, parallaxInverted: !s.parallaxInverted })); break;
-                  
-                  case 'BLEND_MODE_NEXT': 
-                     setState(s => {
-                         const modes: BlendMode[] = ['normal', 'multiply', 'overlay', 'difference'];
-                         const currIdx = modes.indexOf(s.globalLayerBlendMode);
-                         return { ...s, globalLayerBlendMode: modes[(currIdx + 1) % modes.length] };
-                     });
-                     break;
-                     
-                  case 'TOGGLE_GRID': setState(s => ({ ...s, isGridEnabled: !s.isGridEnabled })); break;
-                  
-                  case 'SYMMETRY_NEXT':
-                      setState(s => {
-                          const modes: SymmetryMode[] = [SymmetryMode.NONE, SymmetryMode.HORIZONTAL, SymmetryMode.VERTICAL, SymmetryMode.QUAD, SymmetryMode.CENTRAL];
-                          const currIdx = modes.indexOf(s.symmetryMode);
-                          return { ...s, symmetryMode: modes[(currIdx + 1) % modes.length] };
-                      });
-                      break;
-
-                  case 'LOCK_VIEW': setViewLockTrigger({ type: 'LOCK', ts: Date.now() }); break;
-                  case 'RESET_VIEW': setViewLockTrigger({ type: 'RESET', ts: Date.now() }); break;
-                  
-                  case 'COLOR_SLOT_NEXT': handleCycleColorSlot(1); break;
-                  case 'COLOR_SLOT_PREV': handleCycleColorSlot(-1); break;
-
                   case 'COLOR_1': handleColorPick(0); break;
                   case 'COLOR_2': handleColorPick(1); break;
                   case 'COLOR_3': handleColorPick(2); break;
@@ -571,9 +527,48 @@ export default function App() {
                   case 'COLOR_6': handleColorPick(5); break;
                   case 'COLOR_7': handleColorPick(6); break;
 
-                  // New Random Logic
-                  case 'RANDOM_LAYER': setState(s => ({ ...s, activeLayer: Math.floor(Math.random() * 9) })); break;
-                  case 'RANDOM_COLOR': handleColorPick(Math.floor(Math.random() * 7)); break;
+                  case 'LOCK_VIEW': setViewLockTrigger({ type: 'LOCK', ts: Date.now() }); break;
+                  case 'RESET_VIEW': setViewLockTrigger({ type: 'RESET', ts: Date.now() }); break;
+                  case 'DOF_INC': setState(s => ({ ...s, blurStrength: Math.min(20, s.blurStrength + 1) })); break;
+                  case 'DOF_DEC': setState(s => ({ ...s, blurStrength: Math.max(0, s.blurStrength - 1) })); break;
+                  case 'INVERT_PARALLAX': setState(s => ({ ...s, parallaxInverted: !s.parallaxInverted })); break;
+                  case 'BLEND_MODE_NEXT': {
+                      const modes: BlendMode[] = ['normal', 'multiply', 'overlay', 'difference'];
+                      setState(s => {
+                          const idx = modes.indexOf(s.activeBlendMode);
+                          return { ...s, activeBlendMode: modes[(idx + 1) % modes.length] };
+                      });
+                      break;
+                  }
+                  case 'TOGGLE_GRID': setState(s => ({ ...s, isGridEnabled: !s.isGridEnabled })); break;
+                  case 'SYMMETRY_NEXT': {
+                      const modes = [SymmetryMode.NONE, SymmetryMode.HORIZONTAL, SymmetryMode.VERTICAL, SymmetryMode.QUAD, SymmetryMode.CENTRAL];
+                      setState(s => {
+                          const idx = modes.indexOf(s.symmetryMode);
+                          return { ...s, symmetryMode: modes[(idx + 1) % modes.length] };
+                      });
+                      break;
+                  }
+                  case 'COLOR_SLOT_NEXT': {
+                       setState(s => {
+                           const next = (s.activeColorSlot + 1) % 7;
+                           return { ...s, activeColorSlot: next, activeSecondaryColorSlot: s.isColorSynced ? next : s.activeSecondaryColorSlot };
+                       });
+                       break;
+                  }
+                  case 'COLOR_SLOT_PREV': {
+                       setState(s => {
+                           const prev = (s.activeColorSlot - 1 + 7) % 7;
+                           return { ...s, activeColorSlot: prev, activeSecondaryColorSlot: s.isColorSynced ? prev : s.activeSecondaryColorSlot };
+                       });
+                       break;
+                  }
+                  case 'RANDOM_LAYER': setState(s => ({ ...s, activeLayer: Math.floor(Math.random() * 7) })); break;
+                  case 'RANDOM_COLOR': {
+                       const slot = Math.floor(Math.random() * 7);
+                       handleColorPick(slot);
+                       break;
+                  }
               }
           }
       };
@@ -611,20 +606,30 @@ export default function App() {
       };
   }, [state, shortcutConfig]);
 
-  // Color Pick with Sync Fix
-  const handleColorPick = (slotIndex: number) => {
-      setState(s => ({ 
-          ...s, 
-          activeColorSlot: slotIndex, 
-          // If synced, update secondary too. If not, leave it alone.
-          activeSecondaryColorSlot: s.isColorSynced ? slotIndex : s.activeSecondaryColorSlot,
-          activeTool: ToolType.BRUSH 
-      }));
-  };
-
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('mode') === 'embed') {
+    
+    // --- LOAD FROM SUPABASE SHARE ID ---
+    const sharedId = params.get('id');
+    if (sharedId) {
+        // Fetch the drawing from our Serverless Function
+        fetch(`/api/get-drawing?id=${sharedId}`)
+            .then(res => {
+                if (!res.ok) throw new Error("Drawing not found");
+                return res.json();
+            })
+            .then(data => {
+                const isEmbed = params.get('mode') === 'embed';
+                loadData(data, isEmbed && params.get('bg') === 'transparent');
+                if (isEmbed) {
+                    setState(s => ({ ...s, isEmbedMode: true, isPlaying: true }));
+                }
+            })
+            .catch(err => console.error("Failed to load shared drawing", err));
+    }
+
+    // Existing Embed Logic
+    if (params.get('mode') === 'embed' && !sharedId) {
         const isTransparent = params.get('bg') === 'transparent';
         const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         
@@ -646,8 +651,7 @@ export default function App() {
                 borderRadius: pRadius ? parseInt(pRadius) : 0,
                 borderWidth: pBorderW ? parseInt(pBorderW) : 0,
                 borderColor: pBorderC ? '#' + pBorderC : '#000000'
-            },
-            isParallaxSnappingEnabled: params.get('snapParallax') === 'true'
+            }
         }));
 
         const externalUrl = params.get('url');
@@ -680,15 +684,29 @@ export default function App() {
   const handleReset = () => { handleStrokeCommit([]); };
   const handleTogglePlay = async () => {
     if (isMobile && !state.isPlaying && state.useGyroscope) await requestGyroPermission();
-    if (!state.isPlaying) {
-        setViewLockTrigger({ type: 'UNLOCK', ts: Date.now() });
-    }
     setState(s => ({ ...s, isPlaying: !s.isPlaying }));
   };
 
   const getEncodedState = useCallback(() => {
-     // ... (Existing implementation)
-     return ""; 
+     return JSON.stringify({ 
+        version: 7,
+        palette: state.palette,
+        strokes: currentStrokes,
+        config: {
+            parallaxStrength: state.parallaxStrength,
+            parallaxInverted: state.parallaxInverted,
+            focalLayerIndex: state.focalLayerIndex,
+            springConfig: state.springConfig,
+            backgroundColor: state.canvasBackgroundColor,
+            globalLayerBlendMode: state.globalLayerBlendMode,
+            canvasWidth: state.canvasWidth,
+            layerBlendModes: state.layerBlendModes,
+            layerBlurStrengths: state.layerBlurStrengths,
+            blurStrength: state.blurStrength,
+            focusRange: state.focusRange,
+            symmetryMode: state.symmetryMode
+        }
+    }); 
   }, [currentStrokes, state]);
 
   // Embed Styling Logic
@@ -831,7 +849,6 @@ export default function App() {
                     layerBlendModes={state.layerBlendModes}
                     isGridEnabled={state.isGridEnabled}
                     isSnappingEnabled={state.isSnappingEnabled}
-                    isParallaxSnappingEnabled={state.isParallaxSnappingEnabled} // Pass snapping prop
                     gridSize={state.gridSize}
                     symmetryMode={state.symmetryMode}
                     useGyroscope={state.useGyroscope}
@@ -885,7 +902,6 @@ export default function App() {
                 uiTheme={state.uiTheme}
                 isGridEnabled={state.isGridEnabled}
                 isSnappingEnabled={state.isSnappingEnabled}
-                isParallaxSnappingEnabled={state.isParallaxSnappingEnabled} // Pass snapping
                 gridSize={state.gridSize}
                 symmetryMode={state.symmetryMode}
                 useGyroscope={state.useGyroscope}
@@ -912,7 +928,6 @@ export default function App() {
                 onUIThemeChange={(theme) => setState(s => ({ ...s, uiTheme: theme }))}
                 onGridEnabledChange={(val) => setState(s => ({ ...s, isGridEnabled: val }))}
                 onSnappingEnabledChange={(val) => setState(s => ({ ...s, isSnappingEnabled: val }))}
-                onParallaxSnappingEnabledChange={(val) => setState(s => ({ ...s, isParallaxSnappingEnabled: val }))} // New Handler
                 onGridSizeChange={(val) => setState(s => ({ ...s, gridSize: val }))}
                 onSymmetryModeChange={(val) => setState(s => ({ ...s, symmetryMode: val }))}
                 onUseGyroscopeChange={(val) => setState(s => ({ ...s, useGyroscope: val }))}
