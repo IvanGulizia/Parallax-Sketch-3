@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Toolbar } from './components/Toolbar';
 import { LayerSlider } from './components/LayerSlider';
@@ -173,83 +174,89 @@ export default function App() {
   // Detect Mobile/iPad for default settings
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-  const [state, setState] = useState<AppState>({
-    activeTool: ToolType.BRUSH,
-    activeLayer: 3, 
-    brushSize: 10,
-    eraserSize: 30, // Default decoupled eraser size
-    activeColorSlot: 0,
-    activeSecondaryColorSlot: 1,
-    activeBlendMode: 'normal',
-    activeFillBlendMode: 'normal',
-    isFillEnabled: false,
-    isColorSynced: false, 
-    isStrokeEnabled: true,
-    palette: PRESET_PALETTES[0], 
-    parallaxStrength: 10, 
-    parallaxInverted: false,
-    springConfig: { stiffness: 0.2, damping: 0.2 }, 
-    focalLayerIndex: 3, 
-    isPlaying: false,
-    useGyroscope: isMobile, 
-    isLowPowerMode: true, 
-    eraserMode: EraserMode.STROKE, 
-    isMenuOpen: false,
-    canvasBackgroundColor: '#FFFFFF',
-    canvasWidth: 100, 
-    aspectRatio: null, 
+  const [state, setState] = useState<AppState>(() => {
+    // Check URL params immediately for embed mode to prevent UI flash
+    const params = new URLSearchParams(window.location.search);
+    const isEmbed = params.get('mode') === 'embed';
     
-    // Grid
-    isGridEnabled: false,
-    isSnappingEnabled: true,
-    isParallaxSnappingEnabled: false,
-    gridSize: 40,
-    symmetryMode: SymmetryMode.NONE,
-    
-    // Visual
-    isOnionSkinEnabled: true,
-    blurStrength: 0,
-    focusRange: 0,
+    return {
+        activeTool: ToolType.BRUSH,
+        activeLayer: 3, 
+        brushSize: 10,
+        eraserSize: 30, // Default decoupled eraser size
+        activeColorSlot: 0,
+        activeSecondaryColorSlot: 1,
+        activeBlendMode: 'normal',
+        activeFillBlendMode: 'normal',
+        isFillEnabled: false,
+        isColorSynced: false, 
+        isStrokeEnabled: true,
+        palette: PRESET_PALETTES[0], 
+        parallaxStrength: 10, 
+        parallaxInverted: false,
+        springConfig: { stiffness: 0.2, damping: 0.2 }, 
+        focalLayerIndex: 3, 
+        isPlaying: isEmbed, // Auto-play if embed
+        useGyroscope: isMobile, 
+        isLowPowerMode: true, 
+        eraserMode: EraserMode.STROKE, 
+        isMenuOpen: false,
+        canvasBackgroundColor: '#FFFFFF',
+        canvasWidth: 100, 
+        aspectRatio: null, 
+        
+        // Grid
+        isGridEnabled: false,
+        isSnappingEnabled: true,
+        isParallaxSnappingEnabled: false,
+        gridSize: 40,
+        symmetryMode: SymmetryMode.NONE,
+        
+        // Visual
+        isOnionSkinEnabled: true,
+        blurStrength: 0,
+        focusRange: 0,
 
-    globalLayerBlendMode: 'normal',
-    layerBlendModes: { 0: 'normal', 1: 'normal', 2: 'normal', 3: 'normal', 4: 'normal', 5: 'normal', 6: 'normal' },
-    layerBlurStrengths: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
-    
-    // CRITICAL: Updated UI Theme with strict source of truth
-    uiTheme: {
-        appBg: "#f8f8f6",
-        menuBg: "#f8f8f6",
-        toolBg: "#FFFFFF",
-        textColor: "#18284c",
-        secondaryText: "#d5cdb4",
-        iconColor: "#18284c",
-        activeColor: "#18284c",
-        borderColor: "#efeadc",
-        buttonBg: "#FFFFFF",
-        buttonBorder: "#efeadc",
-        sliderTrack: "#efeadc",
-        sliderFilled: "#d4ccb3",
-        sliderHandle: "#18284c",
-        sidebarDot: "#d4ccb3",
-        visualGuides: "#d4ccb3",
-        sectionTitleColor: "#d4ccb3",
-        sliderValueColor: "#d4ccb3",
-        scrollbarThumb: "#eeeadd",
-        scrollbarTrack: "#efeadc",
-        disabledColor: "#d4cdb7"
-    },
-    isEmbedMode: false,
-    isTransparentEmbed: false,
-    embedStyle: { borderRadius: 0, borderWidth: 0, borderColor: '#000000' },
+        globalLayerBlendMode: 'normal',
+        layerBlendModes: { 0: 'normal', 1: 'normal', 2: 'normal', 3: 'normal', 4: 'normal', 5: 'normal', 6: 'normal' },
+        layerBlurStrengths: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
+        
+        // CRITICAL: Updated UI Theme with strict source of truth
+        uiTheme: {
+            appBg: "#f8f8f6",
+            menuBg: "#f8f8f6",
+            toolBg: "#FFFFFF",
+            textColor: "#18284c",
+            secondaryText: "#d5cdb4",
+            iconColor: "#18284c",
+            activeColor: "#18284c",
+            borderColor: "#efeadc",
+            buttonBg: "#FFFFFF",
+            buttonBorder: "#efeadc",
+            sliderTrack: "#efeadc",
+            sliderFilled: "#d4ccb3",
+            sliderHandle: "#18284c",
+            sidebarDot: "#d4ccb3",
+            visualGuides: "#d4ccb3",
+            sectionTitleColor: "#d4ccb3",
+            sliderValueColor: "#d4ccb3",
+            scrollbarThumb: "#eeeadd",
+            scrollbarTrack: "#efeadc",
+            disabledColor: "#d4cdb7"
+        },
+        isEmbedMode: isEmbed, // Initialize based on URL
+        isTransparentEmbed: false,
+        embedStyle: { borderRadius: 0, borderWidth: 0, borderColor: '#000000' },
 
-    exportConfig: {
-        isActive: false,
-        isRecording: false,
-        trajectory: TrajectoryType.FIGURE8,
-        duration: 3,
-        format: 'webm'
-    },
-    isDebugOpen: false
+        exportConfig: {
+            isActive: false,
+            isRecording: false,
+            trajectory: TrajectoryType.FIGURE8,
+            duration: 3,
+            format: 'webm'
+        },
+        isDebugOpen: false
+    };
   });
 
   const [shortcutConfig, setShortcutConfig] = useState<ShortcutConfig>(DEFAULT_SHORTCUTS);
@@ -824,7 +831,7 @@ export default function App() {
         </div>
       )}
 
-      <div className={`w-full flex flex-col items-center justify-center pb-0 scroll-layer-area ${state.isEmbedMode ? 'p-0 pb-0' : ''}`}>
+      <div className={`w-full flex flex-col items-center justify-center pb-0 scroll-layer-area ${state.isEmbedMode ? 'p-0 pb-0 h-full' : ''}`}>
         <div 
             className={`relative transition-all duration-300 ease-in-out`}
             style={getContainerStyle()}
