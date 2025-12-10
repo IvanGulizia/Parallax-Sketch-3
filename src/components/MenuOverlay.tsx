@@ -1,4 +1,5 @@
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Icons } from './Icons';
 import { SpringConfig, UITheme, BlendMode, ExportConfig, TrajectoryType, ExportFormat, SymmetryMode } from '../types';
@@ -215,24 +216,31 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
 
   // ----- NEW SHARE LOGIC -----
 
-  const buildShareUrl = (id: string) => {
+  const buildShareUrl = (id: string, isEmbed: boolean = false) => {
       const origin = window.location.origin === 'null' ? 'https://parallax-sketch.vercel.app' : window.location.origin;
       const url = new URL(origin + window.location.pathname);
       url.searchParams.set('id', id);
-      url.searchParams.set('mode', 'embed'); // Default to embed mode for viewing
       
-      // Styling params
-      if (embedBorderRadius > 0) url.searchParams.set('borderRadius', embedBorderRadius.toString());
-      if (embedBorderWidth > 0) {
-          url.searchParams.set('borderWidth', embedBorderWidth.toString());
-          url.searchParams.set('borderColor', embedBorderColor.replace('#', ''));
-      }
-      
-      // Background Param
-      if (embedBgMode === 'transparent') {
-          url.searchParams.set('bg', 'transparent');
+      if (isEmbed) {
+          // FOR EMBED CODE (Iframe)
+          url.searchParams.set('mode', 'embed');
+          
+          // Apply Styling Params for Embed
+          if (embedBorderRadius > 0) url.searchParams.set('borderRadius', embedBorderRadius.toString());
+          if (embedBorderWidth > 0) {
+              url.searchParams.set('borderWidth', embedBorderWidth.toString());
+              url.searchParams.set('borderColor', embedBorderColor.replace('#', ''));
+          }
+          
+          if (embedBgMode === 'transparent') {
+              url.searchParams.set('bg', 'transparent');
+          } else {
+              url.searchParams.set('bg', embedBgColor.replace('#', ''));
+          }
       } else {
-          url.searchParams.set('bg', embedBgColor.replace('#', ''));
+          // FOR SHARE LINK (View)
+          // Uses 'view' mode to maintain aspect ratio/frame logic
+          url.searchParams.set('mode', 'view');
       }
       
       return url.toString();
@@ -257,10 +265,11 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
           if (!response.ok) throw new Error('Failed to save');
           
           const { id } = await response.json();
-          const url = buildShareUrl(id);
+          const shareUrl = buildShareUrl(id, false);
+          const embedUrl = buildShareUrl(id, true);
           
-          setPublishedUrl(url);
-          setEmbedCode(`<iframe src="${url}" width="100%" height="600" style="border:none; border-radius:${embedBorderRadius}px; overflow:hidden;" allow="accelerometer; gyroscope;"></iframe>`);
+          setPublishedUrl(shareUrl);
+          setEmbedCode(`<iframe src="${embedUrl}" width="100%" height="600" style="border:none; border-radius:${embedBorderRadius}px; overflow:hidden;" allow="accelerometer; gyroscope;"></iframe>`);
           
       } catch (e) {
           console.error(e);
@@ -277,9 +286,8 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
           const urlObj = new URL(publishedUrl);
           const id = urlObj.searchParams.get('id');
           if (id) {
-              const newUrl = buildShareUrl(id);
-              setPublishedUrl(newUrl);
-              setEmbedCode(`<iframe src="${newUrl}" width="100%" height="600" style="border:none; border-radius:${embedBorderRadius}px; overflow:hidden;" allow="accelerometer; gyroscope;"></iframe>`);
+              const newEmbedUrl = buildShareUrl(id, true);
+              setEmbedCode(`<iframe src="${newEmbedUrl}" width="100%" height="600" style="border:none; border-radius:${embedBorderRadius}px; overflow:hidden;" allow="accelerometer; gyroscope;"></iframe>`);
           }
       }
   }, [embedBorderRadius, embedBorderWidth, embedBorderColor, embedBgMode, embedBgColor]);
@@ -836,4 +844,4 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
       </div>
     </div>
   );
-};
+}

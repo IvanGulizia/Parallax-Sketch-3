@@ -1,4 +1,5 @@
 
+
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Toolbar } from './components/Toolbar';
 import { LayerSlider } from './components/LayerSlider';
@@ -174,83 +175,106 @@ export default function App() {
   // Detect Mobile/iPad for default settings
   const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-  const [state, setState] = useState<AppState>({
-    activeTool: ToolType.BRUSH,
-    activeLayer: 3, 
-    brushSize: 10,
-    eraserSize: 30, // Default decoupled eraser size
-    activeColorSlot: 0,
-    activeSecondaryColorSlot: 1,
-    activeBlendMode: 'normal',
-    activeFillBlendMode: 'normal',
-    isFillEnabled: false,
-    isColorSynced: false, 
-    isStrokeEnabled: true,
-    palette: PRESET_PALETTES[0], 
-    parallaxStrength: 10, 
-    parallaxInverted: false,
-    springConfig: { stiffness: 0.2, damping: 0.2 }, 
-    focalLayerIndex: 3, 
-    isPlaying: false,
-    useGyroscope: isMobile, 
-    isLowPowerMode: true, 
-    eraserMode: EraserMode.STROKE, 
-    isMenuOpen: false,
-    canvasBackgroundColor: '#FFFFFF',
-    canvasWidth: 100, 
-    aspectRatio: null, 
+  // Initialize state with URL params immediately to prevent FOUC
+  const [state, setState] = useState<AppState>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const modeParam = params.get('mode');
     
-    // Grid
-    isGridEnabled: false,
-    isSnappingEnabled: true,
-    isParallaxSnappingEnabled: false,
-    gridSize: 40,
-    symmetryMode: SymmetryMode.NONE,
-    
-    // Visual
-    isOnionSkinEnabled: true,
-    blurStrength: 0,
-    focusRange: 0,
+    // Determine View Mode
+    let initialMode: 'CREATION' | 'VIEW' | 'EMBED' = 'CREATION';
+    if (modeParam === 'embed') initialMode = 'EMBED';
+    else if (modeParam === 'view') initialMode = 'VIEW';
 
-    globalLayerBlendMode: 'normal',
-    layerBlendModes: { 0: 'normal', 1: 'normal', 2: 'normal', 3: 'normal', 4: 'normal', 5: 'normal', 6: 'normal' },
-    layerBlurStrengths: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
-    
-    // CRITICAL: Updated UI Theme with strict source of truth
-    uiTheme: {
-        appBg: "#f8f8f6",
-        menuBg: "#f8f8f6",
-        toolBg: "#FFFFFF",
-        textColor: "#18284c",
-        secondaryText: "#d5cdb4",
-        iconColor: "#18284c",
-        activeColor: "#18284c",
-        borderColor: "#efeadc",
-        buttonBg: "#FFFFFF",
-        buttonBorder: "#efeadc",
-        sliderTrack: "#efeadc",
-        sliderFilled: "#d4ccb3",
-        sliderHandle: "#18284c",
-        sidebarDot: "#d4ccb3",
-        visualGuides: "#d4ccb3",
-        sectionTitleColor: "#d4ccb3",
-        sliderValueColor: "#d4ccb3",
-        scrollbarThumb: "#eeeadd",
-        scrollbarTrack: "#efeadc",
-        disabledColor: "#d4cdb7"
-    },
-    isEmbedMode: false,
-    isTransparentEmbed: false,
-    embedStyle: { borderRadius: 0, borderWidth: 0, borderColor: '#000000' },
+    // Parse Embed Styles immediately
+    const isTransparent = params.get('bg') === 'transparent';
+    const pRadius = params.get('borderRadius');
+    const pBorderW = params.get('borderWidth');
+    const pBorderC = params.get('borderColor');
+    const pStrength = params.get('strength');
+    const pBg = params.get('bg');
 
-    exportConfig: {
-        isActive: false,
-        isRecording: false,
-        trajectory: TrajectoryType.FIGURE8,
-        duration: 3,
-        format: 'webm'
-    },
-    isDebugOpen: false
+    return {
+        viewMode: initialMode,
+        activeTool: ToolType.BRUSH,
+        activeLayer: 3, 
+        brushSize: 10,
+        eraserSize: 30,
+        activeColorSlot: 0,
+        activeSecondaryColorSlot: 1,
+        activeBlendMode: 'normal',
+        activeFillBlendMode: 'normal',
+        isFillEnabled: false,
+        isColorSynced: false, 
+        isStrokeEnabled: true,
+        palette: PRESET_PALETTES[0], 
+        parallaxStrength: pStrength ? parseInt(pStrength) : 10, 
+        parallaxInverted: false,
+        springConfig: { stiffness: 0.2, damping: 0.2 }, 
+        focalLayerIndex: 3, 
+        isPlaying: initialMode !== 'CREATION', // Auto-play in view/embed
+        useGyroscope: isMobile, 
+        isLowPowerMode: true, 
+        eraserMode: EraserMode.STROKE, 
+        isMenuOpen: false,
+        canvasBackgroundColor: isTransparent ? 'transparent' : (pBg ? '#' + pBg : '#FFFFFF'),
+        canvasWidth: 100, 
+        aspectRatio: null, 
+        
+        // Grid
+        isGridEnabled: false,
+        isSnappingEnabled: true,
+        isParallaxSnappingEnabled: false,
+        gridSize: 40,
+        symmetryMode: SymmetryMode.NONE,
+        
+        // Visual
+        isOnionSkinEnabled: true,
+        blurStrength: 0,
+        focusRange: 0,
+
+        globalLayerBlendMode: 'normal',
+        layerBlendModes: { 0: 'normal', 1: 'normal', 2: 'normal', 3: 'normal', 4: 'normal', 5: 'normal', 6: 'normal' },
+        layerBlurStrengths: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
+        
+        uiTheme: {
+            appBg: "#f8f8f6",
+            menuBg: "#f8f8f6",
+            toolBg: "#FFFFFF",
+            textColor: "#18284c",
+            secondaryText: "#d5cdb4",
+            iconColor: "#18284c",
+            activeColor: "#18284c",
+            borderColor: "#efeadc",
+            buttonBg: "#FFFFFF",
+            buttonBorder: "#efeadc",
+            sliderTrack: "#efeadc",
+            sliderFilled: "#d4ccb3",
+            sliderHandle: "#18284c",
+            sidebarDot: "#d4ccb3",
+            visualGuides: "#d4ccb3",
+            sectionTitleColor: "#d4ccb3",
+            sliderValueColor: "#d4ccb3",
+            scrollbarThumb: "#eeeadd",
+            scrollbarTrack: "#efeadc",
+            disabledColor: "#d4cdb7"
+        },
+        
+        isTransparentEmbed: isTransparent,
+        embedStyle: {
+            borderRadius: pRadius ? parseInt(pRadius) : 0,
+            borderWidth: pBorderW ? parseInt(pBorderW) : 0,
+            borderColor: pBorderC ? '#' + pBorderC : '#000000'
+        },
+
+        exportConfig: {
+            isActive: false,
+            isRecording: false,
+            trajectory: TrajectoryType.FIGURE8,
+            duration: 3,
+            format: 'webm'
+        },
+        isDebugOpen: false
+    };
   });
 
   const [shortcutConfig, setShortcutConfig] = useState<ShortcutConfig>(DEFAULT_SHORTCUTS);
@@ -311,7 +335,7 @@ export default function App() {
               setState(s => ({ ...s, blurStrength: Math.max(0, Math.min(20, s.blurStrength + delta)) }));
               return;
           }
-          if (state.isEmbedMode) return;
+          if (state.viewMode !== 'CREATION') return;
           if ((e.target as HTMLElement).closest('.menu-overlay-container')) return;
 
           e.preventDefault();
@@ -326,9 +350,9 @@ export default function App() {
       };
       window.addEventListener('wheel', handleWheel, { passive: false });
       return () => window.removeEventListener('wheel', handleWheel);
-  }, [state.isMenuOpen, state.isEmbedMode]);
+  }, [state.isMenuOpen, state.viewMode]);
 
-  const loadData = (data: any, isTransparent: boolean) => {
+  const loadData = (data: any) => {
       if (!data) return;
       if (data.s) {
           const reconstructedStrokes: Stroke[] = data.s.map((minStroke: any) => ({
@@ -354,7 +378,8 @@ export default function App() {
               parallaxInverted: data.c.pi === 1,
               canvasWidth: data.c.cw ?? s.canvasWidth,
               focalLayerIndex: data.c.fl ?? s.focalLayerIndex,
-              canvasBackgroundColor: isTransparent ? 'transparent' : (data.c.bg ?? s.canvasBackgroundColor),
+              // Keep transparency override if set in state
+              canvasBackgroundColor: s.isTransparentEmbed ? 'transparent' : (data.c.bg ?? s.canvasBackgroundColor),
               blurStrength: data.c.bs ?? s.blurStrength,
               focusRange: data.c.fr ?? s.focusRange,
               symmetryMode: data.c.sm ?? SymmetryMode.NONE
@@ -368,7 +393,7 @@ export default function App() {
               ...s, 
               ...data.config, 
               // Ensure canvasBackgroundColor is loaded correctly from either key
-              canvasBackgroundColor: data.config.canvasBackgroundColor || data.config.backgroundColor || s.canvasBackgroundColor,
+              canvasBackgroundColor: s.isTransparentEmbed ? 'transparent' : (data.config.canvasBackgroundColor || data.config.backgroundColor || s.canvasBackgroundColor),
               palette: data.palette || s.palette 
           }));
       }
@@ -424,7 +449,7 @@ export default function App() {
               const target = ev.target as FileReader;
               if (target?.result && typeof target.result === 'string') {
                   const data = JSON.parse(target.result as string);
-                  loadData(data, state.isTransparentEmbed);
+                  loadData(data);
               }
           } catch (err) {
               console.error("Failed to parse JSON", err);
@@ -477,7 +502,7 @@ export default function App() {
   // --- Input Handling Refactor ---
   useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
-          const mode = state.isEmbedMode ? 'embed' : 'creation';
+          const mode = state.viewMode === 'CREATION' ? 'creation' : 'embed';
           const bindings = shortcutConfig[mode];
           
           let action: ShortcutAction | null = null;
@@ -584,13 +609,13 @@ export default function App() {
       let touchStartX = 0;
       let touchStartY = 0;
       const handleTouchStart = (e: TouchEvent) => {
-          if (state.isEmbedMode && e.touches.length === 1) {
+          if (state.viewMode !== 'CREATION' && e.touches.length === 1) {
               touchStartX = e.touches[0].clientX;
               touchStartY = e.touches[0].clientY;
           }
       };
       const handleTouchEnd = (e: TouchEvent) => {
-          if (state.isEmbedMode && e.changedTouches.length === 1) {
+          if (state.viewMode !== 'CREATION' && e.changedTouches.length === 1) {
              const dx = e.changedTouches[0].clientX - touchStartX;
              if (Math.abs(dx) > 100) {
                  if (dx > 0) handleCyclePalette(1); // Swipe Right
@@ -626,49 +651,19 @@ export default function App() {
                 return res.json();
             })
             .then(data => {
-                const isEmbed = params.get('mode') === 'embed';
-                loadData(data, isEmbed && params.get('bg') === 'transparent');
-                if (isEmbed) {
-                    setState(s => ({ ...s, isEmbedMode: true, isPlaying: true }));
-                }
+                loadData(data);
             })
             .catch(err => console.error("Failed to load shared drawing", err));
     }
 
-    // Existing Embed Logic
-    if (params.get('mode') === 'embed' && !sharedId) {
-        const isTransparent = params.get('bg') === 'transparent';
-        const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        
-        // Load params...
-        const pRadius = params.get('borderRadius');
-        const pBorderW = params.get('borderWidth');
-        const pBorderC = params.get('borderColor');
-
-        setState(s => ({
-            ...s,
-            isEmbedMode: true,
-            isTransparentEmbed: isTransparent,
-            isPlaying: true,
-            // ... (other params same as before)
-            parallaxStrength: parseInt(params.get('strength') || '50'),
-            canvasBackgroundColor: isTransparent ? 'transparent' : (params.get('bg') ? '#' + params.get('bg') : '#FFFFFF'),
-            useGyroscope: isMobileDevice,
-            embedStyle: {
-                borderRadius: pRadius ? parseInt(pRadius) : 0,
-                borderWidth: pBorderW ? parseInt(pBorderW) : 0,
-                borderColor: pBorderC ? '#' + pBorderC : '#000000'
-            }
-        }));
-
-        const externalUrl = params.get('url');
-        if (externalUrl) {
-            const decodedUrl = decodeURIComponent(externalUrl);
-            fetch(decodedUrl)
-                .then(res => { if (!res.ok) throw new Error("Failed"); return res.json(); })
-                .then(data => loadData(data, isTransparent))
-                .catch(err => console.error("Ext error", err));
-        }
+    // External URL loading support
+    const externalUrl = params.get('url');
+    if (externalUrl) {
+        const decodedUrl = decodeURIComponent(externalUrl);
+        fetch(decodedUrl)
+            .then(res => { if (!res.ok) throw new Error("Failed"); return res.json(); })
+            .then(data => loadData(data))
+            .catch(err => console.error("Ext error", err));
     }
   }, []);
 
@@ -717,12 +712,14 @@ export default function App() {
     }); 
   }, [currentStrokes, state]);
 
-  // Embed Styling Logic
+  // Styling Logic for Container
   const getContainerStyle = () => {
-      if (state.isEmbedMode) {
+      // EMBED MODE: Fill the container, apply internal styling
+      if (state.viewMode === 'EMBED') {
           const style: React.CSSProperties = {
-              width: '100%', height: '100%',
-              overflow: 'hidden', // Essential for border radius clipping
+              width: '100%', 
+              height: '100%',
+              overflow: 'hidden', // Clip content for border radius
           };
           if (state.embedStyle) {
               if (state.embedStyle.borderRadius > 0) style.borderRadius = `${state.embedStyle.borderRadius}px`;
@@ -733,7 +730,9 @@ export default function App() {
           }
           return style;
       }
-      // Creation Mode
+      
+      // CREATION & VIEW MODES: Respect the canvasWidth setting
+      // View Mode removes UI but keeps the "frame" aspect.
       const baseStyle: React.CSSProperties = {};
       if (state.aspectRatio === 1) {
           baseStyle.height = '85vh';
@@ -746,10 +745,17 @@ export default function App() {
       return baseStyle;
   };
 
+  const isCreationMode = state.viewMode === 'CREATION';
+  const isEmbedOrView = state.viewMode !== 'CREATION';
+
   return (
     <main 
-        className={`relative w-screen h-screen flex flex-col items-center justify-center overflow-hidden transition-colors duration-300 ${state.isTransparentEmbed ? '' : state.isEmbedMode ? 'bg-white' : 'bg-[var(--menu-bg)]'}`}
-        style={{ backgroundColor: state.isEmbedMode && !state.isTransparentEmbed ? '#FFFFFF' : (state.isTransparentEmbed ? 'transparent' : undefined) }}
+        className={`relative w-screen h-screen flex flex-col items-center justify-center overflow-hidden transition-colors duration-300 ${state.isTransparentEmbed ? '' : (isCreationMode ? 'bg-[var(--menu-bg)]' : 'bg-white')}`}
+        style={{ 
+            // In View Mode, we typically want a clean background (e.g., white or appBg) unless specified otherwise.
+            // In Embed Mode, transparency is often desired.
+            backgroundColor: state.isTransparentEmbed ? 'transparent' : (isCreationMode ? undefined : state.uiTheme.appBg)
+        }}
     >
       {state.isDebugOpen && (
           <DebugOverlay 
@@ -758,16 +764,16 @@ export default function App() {
             setConfig={setShortcutConfig}
             uiTheme={state.uiTheme}
             setUITheme={(theme) => setState(s => ({ ...s, uiTheme: theme }))}
-            currentMode={state.isEmbedMode ? 'embed' : 'creation'}
+            currentMode={isEmbedOrView ? 'embed' : 'creation'}
             presetPalettes={PRESET_PALETTES} // Pass presets
           />
       )}
 
-      {state.isEmbedMode && showEmbedShortcuts && (
+      {isEmbedOrView && showEmbedShortcuts && (
           <ShortcutsOverlay onClose={() => setShowEmbedShortcuts(false)} isEmbed={true} />
       )}
 
-      {!state.isEmbedMode && (
+      {isCreationMode && (
         <div className="absolute top-0 left-0 w-full h-[7.5vh] flex items-center justify-center z-50">
             <Toolbar 
                 activeTool={state.activeTool}
@@ -785,7 +791,7 @@ export default function App() {
                 eraserMode={state.eraserMode}
                 canUndo={historyIndex > 0}
                 canRedo={historyIndex < history.length - 1}
-                isEmbedMode={state.isEmbedMode}
+                isEmbedMode={isEmbedOrView}
                 onTogglePlay={handleTogglePlay}
                 onToolChange={(tool) => setState(s => ({ ...s, activeTool: tool }))}
                 onColorSlotChange={(index, isSecondary) => {
@@ -825,13 +831,13 @@ export default function App() {
         </div>
       )}
 
-      <div className={`w-full flex flex-col items-center justify-center pb-0 scroll-layer-area ${state.isEmbedMode ? 'p-0 pb-0 h-full' : ''}`}>
+      <div className={`w-full flex flex-col items-center justify-center pb-0 scroll-layer-area ${state.viewMode === 'EMBED' ? 'p-0 pb-0 h-full' : ''}`}>
         <div 
             className={`relative transition-all duration-300 ease-in-out`}
             style={getContainerStyle()}
         >
-            <div className={`w-full h-full overflow-hidden ${state.isEmbedMode ? '' : 'rounded-3xl border border-[var(--border-color)]'}`}
-                 style={state.isEmbedMode ? { borderRadius: 'inherit' } : {}}
+            <div className={`w-full h-full overflow-hidden ${state.viewMode === 'EMBED' ? '' : 'rounded-3xl border border-[var(--border-color)]'}`}
+                 style={state.viewMode === 'EMBED' ? { borderRadius: 'inherit' } : {}}
             >
                 <DrawingCanvas 
                     // Props passed...
@@ -872,7 +878,7 @@ export default function App() {
                     onExportComplete={() => setState(s => ({ ...s, exportConfig: { ...s.exportConfig, isRecording: false } }))}
                     onStopPreview={() => setState(s => ({ ...s, exportConfig: { ...s.exportConfig, isActive: false, isRecording: false } }))}
                     onColorPick={handleColorPick}
-                    isEmbedMode={state.isEmbedMode}
+                    isEmbedMode={isEmbedOrView}
                     isMobile={isMobile}
                     onEmbedContextMenu={() => setShowEmbedShortcuts(true)}
                     layerBlurStrengths={state.layerBlurStrengths}
@@ -881,7 +887,7 @@ export default function App() {
                 />
             </div>
             
-            {!state.isEmbedMode && (
+            {isCreationMode && (
                 <div 
                     className="absolute top-0 bottom-0 hidden md:block"
                     style={{ left: '100%', marginLeft: 'var(--spacing-x)', width: 'var(--spacing-x)' }}

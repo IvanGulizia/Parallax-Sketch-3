@@ -1,3 +1,5 @@
+
+
 export enum ToolType {
   BRUSH = 'BRUSH',
   ERASER = 'ERASER',
@@ -16,6 +18,8 @@ export enum SymmetryMode {
   QUAD = 'QUAD',             // Mirror Both
   CENTRAL = 'CENTRAL'        // Point Reflection (Inverted)
 }
+
+export type ViewMode = 'CREATION' | 'VIEW' | 'EMBED';
 
 export interface Point {
   x: number;
@@ -118,6 +122,7 @@ export interface ShortcutConfig {
 }
 
 export interface AppState {
+  viewMode: ViewMode; // New: Distinct modes for Creation, Share View, and Embed
   activeTool: ToolType;
   activeLayer: number; // 0 to 4
   brushSize: number;
@@ -159,7 +164,7 @@ export interface AppState {
   layerBlendModes: Record<number, BlendMode>; // Per-layer blend mode (CSS mix-blend-mode)
   layerBlurStrengths: Record<number, number>; // Per-layer blur override
   uiTheme: UITheme; 
-  isEmbedMode: boolean;
+  
   isTransparentEmbed: boolean; // New: for transparent background embeds
   embedStyle?: EmbedStyle; // Visual style for embed container
 
