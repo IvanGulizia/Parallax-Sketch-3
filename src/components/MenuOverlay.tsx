@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Icons } from './Icons';
 import { SpringConfig, UITheme, BlendMode, ExportConfig, TrajectoryType, ExportFormat, SymmetryMode } from '../types';
@@ -174,6 +175,14 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
   const [embedBgMode, setEmbedBgMode] = useState<'transparent' | 'color'>('transparent');
   const [embedBgColor, setEmbedBgColor] = useState('#ffffff');
 
+  // Local state for sliders that should update only on release
+  const [localCanvasWidth, setLocalCanvasWidth] = useState(canvasWidth);
+
+  // Sync local width with prop when prop changes externally (e.g. initial load or reset)
+  useEffect(() => {
+    setLocalCanvasWidth(canvasWidth);
+  }, [canvasWidth]);
+
   const menuRef = useRef<HTMLDivElement>(null);
   const shareSectionRef = useRef<HTMLDivElement>(null);
 
@@ -325,17 +334,35 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
                     <div className="w-32">
                         <Slider 
                             min={20} max={100} step={1} 
-                            value={canvasWidth} 
+                            value={localCanvasWidth} 
                             onChange={(v) => {
+                                setLocalCanvasWidth(v);
+                                if (aspectRatio === 1) {
+                                    onCanvasWidthChange(v); // Instant update for Square mode if desired, or defer it too
+                                }
+                            }}
+                            onCommit={(v) => {
                                 onCanvasWidthChange(v);
-                                onAspectRatioChange(null);
+                                if (aspectRatio === 1) {
+                                    // Keep ratio, but allow width adjustment logic if needed
+                                } else {
+                                    onAspectRatioChange(null); // Clear ratio on manual width change
+                                }
                             }}
                         />
                     </div>
                 </ControlRow>
                 <ControlRow label="Layout">
                      <button 
-                        onClick={() => onAspectRatioChange(aspectRatio === 1 ? null : 1)} 
+                        onClick={() => {
+                            if (aspectRatio === 1) {
+                                onAspectRatioChange(null);
+                            } else {
+                                onAspectRatioChange(1);
+                                // Ensure slider reflects width, even though 1:1 is handled by CSS aspect-ratio primarily
+                                // But if user wants to scale the square...
+                            }
+                        }} 
                         className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
                             aspectRatio === 1
                             ? 'bg-[var(--active-color)] text-white border-[var(--active-color)]' 

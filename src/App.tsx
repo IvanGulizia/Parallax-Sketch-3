@@ -737,7 +737,7 @@ export default function App() {
       if (state.aspectRatio === 1) {
           baseStyle.height = '85vh';
           baseStyle.aspectRatio = '1/1';
-          baseStyle.width = 'auto';
+          baseStyle.width = 'auto'; // Width driven by height + aspect ratio
       } else {
           baseStyle.width = `calc(${state.canvasWidth / 100} * (100vw - (6 * var(--spacing-x))))`;
           baseStyle.height = '85vh';
