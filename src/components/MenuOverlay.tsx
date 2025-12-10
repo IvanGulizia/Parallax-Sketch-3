@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Icons } from './Icons';
 import { SpringConfig, UITheme, BlendMode, ExportConfig, TrajectoryType, ExportFormat, SymmetryMode } from '../types';
@@ -168,7 +169,9 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
   // Embed Styling State
   const [embedBorderRadius, setEmbedBorderRadius] = useState(12);
   const [embedBorderWidth, setEmbedBorderWidth] = useState(0);
-  const [embedBorderColor, setEmbedBorderColor] = useState('#000000');
+  const [embedBorderColor, setEmbedBorderColor] = useState('#efeadc');
+  const [embedBgMode, setEmbedBgMode] = useState<'transparent' | 'color'>('transparent');
+  const [embedBgColor, setEmbedBgColor] = useState('#ffffff');
 
   const menuRef = useRef<HTMLDivElement>(null);
   const shareSectionRef = useRef<HTMLDivElement>(null);
@@ -218,13 +221,18 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
       url.searchParams.set('id', id);
       url.searchParams.set('mode', 'embed'); // Default to embed mode for viewing
       
-      // We can stick styling params here if we want them overridden by URL, 
-      // but usually the saved JSON contains config. 
-      // Let's add styling params for the iframe container specifically.
+      // Styling params
       if (embedBorderRadius > 0) url.searchParams.set('borderRadius', embedBorderRadius.toString());
       if (embedBorderWidth > 0) {
           url.searchParams.set('borderWidth', embedBorderWidth.toString());
           url.searchParams.set('borderColor', embedBorderColor.replace('#', ''));
+      }
+      
+      // Background Param
+      if (embedBgMode === 'transparent') {
+          url.searchParams.set('bg', 'transparent');
+      } else {
+          url.searchParams.set('bg', embedBgColor.replace('#', ''));
       }
       
       return url.toString();
@@ -233,36 +241,7 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
   const handlePublish = async () => {
       setIsPublishing(true);
       try {
-          // Prepare Data
-          // We need to fetch the full state or reconstruct what 'handleExport' does.
-          // Since we don't have access to 'currentStrokes' directly here, 
-          // we rely on 'onExport' logic usually, but here we need to trigger it from Parent or use a ref.
-          // LIMITATION: MenuOverlay doesn't have the strokes. 
-          // FIX: We need to ask App to provide the data or a function 'getExportData'.
-          // For this implementation, we will assume 'onExport' triggers a download, which is not what we want.
-          // We will use the 'getEncodedState' prop (renamed/purposed for this).
-          // OR better: Assume the user clicks share, and we trigger a save.
-          
-          // Actually, getEncodedState in App.tsx currently returns "", so we need to rely on a hack 
-          // or assume we can trigger a hidden button. 
-          
-          // REAL FIX: The prompt allows me to edit App.tsx. I added logic there.
-          // But passing data down is cleaner.
-          // Let's assume we can trigger a specialized callback `onPublish` that handles the fetch.
-          // Since I cannot change the Props interface broadly without breaking things, I'll inline the fetch in App.tsx 
-          // and pass it down as `onPublish`. 
-          
-          // WAIT: I can't easily change App.tsx to pass a NEW function without updating types.ts everywhere.
-          // Hack: I will use the `onExport` button logic but intercepted? No.
-          
-          // Let's use `handleExport`'s logic but inside `handlePublish`.
-          // We need the data. 
-          
-          // RE-STRATEGY: I will invoke a function passed from App.tsx.
-          // Since I am already modifying App.tsx, I will modify `getEncodedState` to return the JSON string 
-          // instead of empty string.
-          
-          const jsonString = getEncodedState(); // This needs to be implemented in App.tsx
+          const jsonString = getEncodedState(); 
           if (!jsonString) {
               alert("Error: No data to publish.");
               setIsPublishing(false);
@@ -291,6 +270,21 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
       }
   };
 
+  // Re-generate embed code if style changes after publishing
+  useEffect(() => {
+      if (publishedUrl) {
+          // Extract ID from current published URL
+          const urlObj = new URL(publishedUrl);
+          const id = urlObj.searchParams.get('id');
+          if (id) {
+              const newUrl = buildShareUrl(id);
+              setPublishedUrl(newUrl);
+              setEmbedCode(`<iframe src="${newUrl}" width="100%" height="600" style="border:none; border-radius:${embedBorderRadius}px; overflow:hidden;" allow="accelerometer; gyroscope;"></iframe>`);
+          }
+      }
+  }, [embedBorderRadius, embedBorderWidth, embedBorderColor, embedBgMode, embedBgColor]);
+
+
   if (!isOpen) return null;
 
   return (
@@ -314,7 +308,7 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-8 custom-scrollbar bg-[var(--menu-bg)]">
         
-        {/* ... (Canvas & Grid Section Skipped for brevity, same as before) ... */}
+        {/* ... (Canvas & Grid Section) ... */}
         
         <div>
             <SectionTitle>Canvas & Grid</SectionTitle>
@@ -734,7 +728,7 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
 
                     <Separator />
 
-                    {/* Embed Styling (Border/Radius) */}
+                    {/* Embed Styling (Border/Radius/Bg) */}
                     <div className="space-y-4">
                         <span className="text-[10px] font-bold uppercase tracking-wide opacity-50 block">Embed Styling</span>
                         
@@ -757,6 +751,51 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
                                     value={embedBorderWidth} 
                                     onChange={setEmbedBorderWidth}
                                 />
+                            </div>
+                        </ControlRow>
+
+                        <ControlRow label="Border Color">
+                            <div className="flex items-center gap-2 px-1 py-1 bg-[var(--secondary-bg)] rounded-lg border border-[var(--button-border)] w-fit">
+                                <div className="relative w-6 h-6 flex items-center justify-center cursor-pointer rounded overflow-hidden shadow-sm border border-[var(--border-color)]">
+                                    <div 
+                                        className="absolute inset-0"
+                                        style={{ backgroundColor: embedBorderColor }}
+                                    />
+                                    <input 
+                                        type="color" 
+                                        value={embedBorderColor}
+                                        onChange={(e) => setEmbedBorderColor(e.target.value)}
+                                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                                    />
+                                </div>
+                            </div>
+                        </ControlRow>
+
+                        <ControlRow label="App Background">
+                             <div className="flex bg-[var(--button-bg)] rounded-lg p-0.5 border border-[var(--button-border)]">
+                                <button 
+                                    onClick={() => setEmbedBgMode('transparent')}
+                                    className={`px-2 py-1 rounded-md text-[9px] uppercase font-medium transition-all ${embedBgMode === 'transparent' ? 'bg-[var(--active-color)] text-white shadow-sm' : 'hover:text-[var(--text-color)]'}`}
+                                >
+                                    Transp
+                                </button>
+                                <button 
+                                    onClick={() => setEmbedBgMode('color')}
+                                    className={`px-2 py-1 rounded-md text-[9px] uppercase font-medium transition-all flex items-center gap-2 ${embedBgMode === 'color' ? 'bg-[var(--active-color)] text-white shadow-sm' : 'hover:text-[var(--text-color)]'}`}
+                                >
+                                    Color
+                                    {embedBgMode === 'color' && (
+                                        <div className="relative w-3 h-3 rounded-full border border-white/50 overflow-hidden ml-1">
+                                            <div className="absolute inset-0" style={{ backgroundColor: embedBgColor }} />
+                                            <input 
+                                                type="color" 
+                                                value={embedBgColor} 
+                                                onChange={(e) => setEmbedBgColor(e.target.value)} 
+                                                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                                            />
+                                        </div>
+                                    )}
+                                </button>
                             </div>
                         </ControlRow>
                     </div>

@@ -247,7 +247,9 @@ export default function App() {
         isEmbedMode: isEmbed, // Initialize based on URL
         isTransparentEmbed: false,
         embedStyle: { borderRadius: 0, borderWidth: 0, borderColor: '#000000' },
-
+        // Track the App Background separately from Canvas Background for embed logic
+        // We reuse isTransparentEmbed logic but extend it to support custom color
+        
         exportConfig: {
             isActive: false,
             isRecording: false,
@@ -265,6 +267,9 @@ export default function App() {
   const [currentStrokes, setCurrentStrokes] = useState<Stroke[]>([]);
   const [showEmbedShortcuts, setShowEmbedShortcuts] = useState(false);
   const lastTap = useRef<number>(0);
+  
+  // App Background state for embed mode (distinct from drawing background)
+  const [embedAppBg, setEmbedAppBg] = useState<string>('#FFFFFF');
 
   // New state for View Lock
   const [viewLockTrigger, setViewLockTrigger] = useState<{ type: 'LOCK' | 'RESET' | 'UNLOCK', ts: number } | undefined>(undefined);
@@ -360,7 +365,8 @@ export default function App() {
               parallaxInverted: data.c.pi === 1,
               canvasWidth: data.c.cw ?? s.canvasWidth,
               focalLayerIndex: data.c.fl ?? s.focalLayerIndex,
-              canvasBackgroundColor: isTransparent ? 'transparent' : (data.c.bg ?? s.canvasBackgroundColor),
+              // Note: We don't override the app background (embed param) with canvas background (json)
+              canvasBackgroundColor: (data.c.bg ?? s.canvasBackgroundColor),
               blurStrength: data.c.bs ?? s.blurStrength,
               focusRange: data.c.fr ?? s.focusRange,
               symmetryMode: data.c.sm ?? SymmetryMode.NONE
@@ -373,7 +379,6 @@ export default function App() {
           setState(s => ({ 
               ...s, 
               ...data.config, 
-              // Ensure canvasBackgroundColor is loaded correctly from either key
               canvasBackgroundColor: data.config.canvasBackgroundColor || data.config.backgroundColor || s.canvasBackgroundColor,
               palette: data.palette || s.palette 
           }));
@@ -644,6 +649,10 @@ export default function App() {
     // Existing Embed Logic
     if (params.get('mode') === 'embed' && !sharedId) {
         const isTransparent = params.get('bg') === 'transparent';
+        const bgParam = params.get('bg');
+        // If bg param exists, use it for the App background. Otherwise white or transparent.
+        const appBgColor = isTransparent ? 'transparent' : (bgParam ? '#' + bgParam : '#FFFFFF');
+
         const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         
         // Load params...
@@ -658,14 +667,17 @@ export default function App() {
             isPlaying: true,
             // ... (other params same as before)
             parallaxStrength: parseInt(params.get('strength') || '50'),
-            canvasBackgroundColor: isTransparent ? 'transparent' : (params.get('bg') ? '#' + params.get('bg') : '#FFFFFF'),
-            useGyroscope: isMobileDevice,
+            // Note: We don't overwrite canvasBackgroundColor (paper color) here to preserve drawing look
+            // But we set the App background via embedAppBg logic below
+            useGyroscope: isMobileDevice, // Force gyro on mobile
             embedStyle: {
                 borderRadius: pRadius ? parseInt(pRadius) : 0,
                 borderWidth: pBorderW ? parseInt(pBorderW) : 0,
                 borderColor: pBorderC ? '#' + pBorderC : '#000000'
             }
         }));
+        
+        setEmbedAppBg(appBgColor);
 
         const externalUrl = params.get('url');
         if (externalUrl) {
@@ -675,6 +687,29 @@ export default function App() {
                 .then(data => loadData(data, isTransparent))
                 .catch(err => console.error("Ext error", err));
         }
+    } else if (sharedId && params.get('mode') === 'embed') {
+         // Also handle styling params for shared ID case
+        const isTransparent = params.get('bg') === 'transparent';
+        const bgParam = params.get('bg');
+        const appBgColor = isTransparent ? 'transparent' : (bgParam ? '#' + bgParam : '#FFFFFF');
+        
+        const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        
+        const pRadius = params.get('borderRadius');
+        const pBorderW = params.get('borderWidth');
+        const pBorderC = params.get('borderColor');
+
+        setEmbedAppBg(appBgColor);
+        setState(s => ({
+            ...s,
+            useGyroscope: isMobileDevice,
+            isTransparentEmbed: isTransparent,
+            embedStyle: {
+                borderRadius: pRadius ? parseInt(pRadius) : 0,
+                borderWidth: pBorderW ? parseInt(pBorderW) : 0,
+                borderColor: pBorderC ? '#' + pBorderC : '#000000'
+            }
+        }));
     }
   }, []);
 
@@ -754,8 +789,12 @@ export default function App() {
 
   return (
     <main 
-        className={`relative w-screen h-screen flex flex-col items-center justify-center overflow-hidden transition-colors duration-300 ${state.isTransparentEmbed ? '' : state.isEmbedMode ? 'bg-white' : 'bg-[var(--menu-bg)]'}`}
-        style={{ backgroundColor: state.isEmbedMode && !state.isTransparentEmbed ? '#FFFFFF' : (state.isTransparentEmbed ? 'transparent' : undefined) }}
+        className={`relative w-screen h-screen flex flex-col items-center justify-center overflow-hidden transition-colors duration-300 ${state.isTransparentEmbed ? '' : state.isEmbedMode ? '' : 'bg-[var(--menu-bg)]'}`}
+        style={{ 
+            backgroundColor: state.isEmbedMode 
+                ? embedAppBg 
+                : undefined 
+        }}
     >
       {state.isDebugOpen && (
           <DebugOverlay 
