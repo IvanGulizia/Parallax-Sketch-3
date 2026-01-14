@@ -1,10 +1,15 @@
 
-
 export enum ToolType {
   BRUSH = 'BRUSH',
   ERASER = 'ERASER',
   SELECT = 'SELECT',
 }
+
+// --- CONSTANTS ---
+export const LAYER_COUNT = 9;
+export const MAX_LAYER_INDEX = 8;
+export const MIN_LAYER_INDEX = 0;
+export const DEFAULT_LAYER_INDEX = 4; // Middle of 0-8
 
 export enum EraserMode {
   STANDARD = 'STANDARD',
@@ -40,6 +45,7 @@ export interface Stroke {
   blendMode?: BlendMode;
   fillBlendMode?: BlendMode;
   isStrokeEnabled?: boolean; // Kept for compatibility, but logic will enforce true mostly
+  roundness?: number; // 0 to 100, defines the curve of the corners
 }
 
 export interface SpringConfig {
@@ -122,23 +128,23 @@ export interface ShortcutConfig {
 }
 
 export interface AppState {
-  viewMode: ViewMode; // New: Distinct modes for Creation, Share View, and Embed
+  viewMode: ViewMode;
   activeTool: ToolType;
-  activeLayer: number; // 0 to 4
+  activeLayer: number; // 0 to 8
   brushSize: number;
   eraserSize: number; // New: Decoupled eraser size
-  activeColorSlot: number; // 0 to 4
-  activeSecondaryColorSlot: number; // 0 to 4 (Fill color)
+  activeColorSlot: number; // 0 to 6
+  activeSecondaryColorSlot: number; // 0 to 6 (Fill color)
   activeBlendMode: BlendMode;
   activeFillBlendMode: BlendMode;
   isFillEnabled: boolean;
   isColorSynced: boolean; // New: If true, fill color follows stroke color
   isStrokeEnabled: boolean; 
-  palette: string[]; // Array of 5 hex codes
+  palette: string[]; // Array of 7 hex codes
   parallaxStrength: number;
   parallaxInverted: boolean; 
   springConfig: SpringConfig;
-  focalLayerIndex: number; // The layer that stays still (0-4)
+  focalLayerIndex: number; // The layer that stays still (0-8)
   isPlaying: boolean;
   useGyroscope: boolean; // New: Use device orientation for parallax
   isLowPowerMode: boolean; // New: Disables springs and loops for battery saving
@@ -153,7 +159,8 @@ export interface AppState {
   isSnappingEnabled: boolean;
   isParallaxSnappingEnabled: boolean; // New: Snaps parallax offset to grid
   gridSize: number; // 10 to 100
-  symmetryMode: SymmetryMode; // New
+  gridRoundness: number; // New: 0 to 100, defines corner smoothness
+  symmetryMode: SymmetryMode; 
 
   // Visual Settings
   isOnionSkinEnabled: boolean; // New: Depth based opacity
@@ -164,7 +171,7 @@ export interface AppState {
   layerBlendModes: Record<number, BlendMode>; // Per-layer blend mode (CSS mix-blend-mode)
   layerBlurStrengths: Record<number, number>; // Per-layer blur override
   uiTheme: UITheme; 
-  
+  isEmbedMode: boolean;
   isTransparentEmbed: boolean; // New: for transparent background embeds
   embedStyle?: EmbedStyle; // Visual style for embed container
 

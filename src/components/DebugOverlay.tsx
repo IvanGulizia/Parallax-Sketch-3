@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Icons } from './Icons';
 import { ShortcutConfig, ShortcutAction, KeyBinding, UITheme } from '../types';
@@ -45,10 +46,13 @@ const PRESET_SHORTCUTS: Record<string, ShortcutConfig> = {
             'COLOR_7': [{ key: '7' }],
             'PREV_PALETTE': [{ key: 'a' }],
             'NEXT_PALETTE': [{ key: 'd' }],
-            'LAYER_NEXT': [{ key: 'ArrowUp' }],
-            'LAYER_PREV': [{ key: 'ArrowDown' }],
-            'FOCUS_NEXT': [{ key: 's' }],
-            'FOCUS_PREV': [{ key: 'w' }],
+            
+            // Updated Presets to match new Defaults
+            'LAYER_NEXT': [{ key: 'w' }], 
+            'LAYER_PREV': [{ key: 's' }],
+            'FOCUS_NEXT': [{ key: 'ArrowUp' }],
+            'FOCUS_PREV': [{ key: 'ArrowDown' }],
+            
             'TOGGLE_GYRO': [],
             'TOGGLE_MENU': [],
             'EXPORT': [{ key: 'e' }],
@@ -75,7 +79,8 @@ const PRESET_SHORTCUTS: Record<string, ShortcutConfig> = {
             'COLOR_7': [{ key: '7' }],
             'PREV_PALETTE': [],
             'NEXT_PALETTE': [{ key: 'd' }, { key: 'ArrowRight' }],
-            'LAYER_NEXT': [{ key: 'ArrowUp' }], 'LAYER_PREV': [{ key: 'ArrowDown' }],
+            'LAYER_NEXT': [{ key: 'w' }, { key: 'ArrowUp' }],
+            'LAYER_PREV': [{ key: 's' }, { key: 'ArrowDown' }],
             'FOCUS_NEXT': [], 'FOCUS_PREV': [],
             'TOGGLE_GYRO': [{ key: 'a' }, { key: 'ArrowLeft' }],
             'TOGGLE_MENU': [{ key: 'm' }],
@@ -428,4 +433,4 @@ export const DebugOverlay: React.FC<DebugOverlayProps> = ({ onClose, config, set
         </div>
     </div>
   );
-};
+}

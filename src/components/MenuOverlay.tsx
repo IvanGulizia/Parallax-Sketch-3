@@ -1,9 +1,7 @@
 
-
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Icons } from './Icons';
-import { SpringConfig, UITheme, BlendMode, ExportConfig, TrajectoryType, ExportFormat, SymmetryMode } from '../types';
+import { SpringConfig, UITheme, BlendMode, ExportConfig, TrajectoryType, ExportFormat, SymmetryMode, MAX_LAYER_INDEX } from '../types';
 import { Slider } from './Slider';
 // @ts-ignore
 import LZString from 'lz-string';
@@ -74,6 +72,7 @@ interface MenuOverlayProps {
   isGridEnabled: boolean;
   isSnappingEnabled: boolean;
   gridSize: number;
+  gridRoundness: number; // New Prop
   symmetryMode: SymmetryMode;
   useGyroscope: boolean;
   isLowPowerMode: boolean;
@@ -100,6 +99,7 @@ interface MenuOverlayProps {
   onGridEnabledChange: (val: boolean) => void;
   onSnappingEnabledChange: (val: boolean) => void;
   onGridSizeChange: (val: number) => void;
+  onGridRoundnessChange: (val: number) => void; // New Handler
   onSymmetryModeChange: (val: SymmetryMode) => void;
   onUseGyroscopeChange: (val: boolean) => void;
   onLowPowerModeChange: (val: boolean) => void;
@@ -126,6 +126,7 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
     isGridEnabled,
     isSnappingEnabled,
     gridSize,
+    gridRoundness,
     symmetryMode,
     useGyroscope,
     isLowPowerMode,
@@ -152,6 +153,7 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
     onGridEnabledChange,
     onSnappingEnabledChange,
     onGridSizeChange,
+    onGridRoundnessChange,
     onSymmetryModeChange,
     onUseGyroscopeChange,
     onLowPowerModeChange,
@@ -221,6 +223,34 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
     } else {
         onUseGyroscopeChange(!useGyroscope);
     }
+  };
+
+  const handleSquareToggle = () => {
+        if (aspectRatio === 1) {
+            onAspectRatioChange(null);
+        } else {
+            // Calculate equivalent width percentage for square (85vh height)
+            // Available Width Calculation matches App.tsx CSS logic
+            const isMobile = window.innerWidth < 768;
+            const spacingPx = isMobile ? 16 : 48; // 1rem vs 3rem assuming root font size 16px
+            const availableWidth = window.innerWidth - (6 * spacingPx);
+            
+            // Target dimension is the height (85vh)
+            const targetSize = window.innerHeight * 0.85;
+            
+            // We need to know what percentage of availableWidth gives us targetSize
+            // targetSize = (percent / 100) * availableWidth
+            // percent = (targetSize / availableWidth) * 100
+            
+            let percent = (targetSize / availableWidth) * 100;
+            
+            // Clamp to slider bounds
+            percent = Math.min(100, Math.max(20, percent));
+            
+            onCanvasWidthChange(Math.round(percent));
+            setLocalCanvasWidth(Math.round(percent));
+            onAspectRatioChange(1);
+        }
   };
 
   // ----- NEW SHARE LOGIC -----
@@ -354,15 +384,7 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
                 </ControlRow>
                 <ControlRow label="Layout">
                      <button 
-                        onClick={() => {
-                            if (aspectRatio === 1) {
-                                onAspectRatioChange(null);
-                            } else {
-                                onAspectRatioChange(1);
-                                // Ensure slider reflects width, even though 1:1 is handled by CSS aspect-ratio primarily
-                                // But if user wants to scale the square...
-                            }
-                        }} 
+                        onClick={handleSquareToggle} 
                         className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
                             aspectRatio === 1
                             ? 'bg-[var(--active-color)] text-white border-[var(--active-color)]' 
@@ -392,8 +414,9 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
                 
                 <ControlRow label="Focal Layer">
                      <div className="w-32">
+                        {/* FIXED: Increased max limit to 8 using constant */}
                         <Slider 
-                            min={0} max={6} step={1}
+                            min={0} max={MAX_LAYER_INDEX} step={1} 
                             value={focalLayerIndex} 
                             onChange={onFocalLayerChange}
                         />
@@ -507,6 +530,18 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
                                     value={gridSize} 
                                     onChange={onGridSizeChange}
                                 />
+                            </div>
+                         </ControlRow>
+                         <ControlRow label="Corner Roundness">
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-medium w-8 text-right" style={{ color: 'var(--slider-value-color)' }}>{gridRoundness}%</span>
+                                <div className="w-24">
+                                    <Slider 
+                                        min={0} max={100} step={5}
+                                        value={gridRoundness} 
+                                        onChange={onGridRoundnessChange}
+                                    />
+                                </div>
                             </div>
                          </ControlRow>
                      </div>

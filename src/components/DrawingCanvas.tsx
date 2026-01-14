@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState, useCallback, useLayoutEffect } from 'react';
 import { ToolType, Point, Stroke, EraserMode, SpringConfig, BlendMode, ExportConfig, TrajectoryType, SymmetryMode } from '../types';
 import { v4 as uuidv4 } from 'uuid';
@@ -28,6 +29,7 @@ interface DrawingCanvasProps {
   isSnappingEnabled: boolean;
   isParallaxSnappingEnabled: boolean;
   gridSize: number;
+  gridRoundness: number; // New Prop
   symmetryMode: SymmetryMode;
   useGyroscope: boolean;
   isLowPowerMode: boolean;
@@ -76,6 +78,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   isSnappingEnabled,
   isParallaxSnappingEnabled,
   gridSize,
+  gridRoundness, // New prop
   symmetryMode,
   useGyroscope,
   isLowPowerMode,
@@ -101,6 +104,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   // Initialize with 9 layers (indices 0 to 8)
   const offscreenCanvases = useRef<(HTMLCanvasElement | null)[]>(new Array(9).fill(null));
   
+  // Dedicated Canvas for Guides (Grid/Symmetry) to avoid Blur
+  const guideCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
   // Physics State
   const targetOffset = useRef({ x: 0, y: 0 });
   const currentOffset = useRef({ x: 0, y: 0 });
@@ -237,7 +243,74 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         return { x: offX, y: offY };
   }, [parallaxStrength, parallaxInverted, focalLayerIndex, isGridEnabled, isParallaxSnappingEnabled, gridSize, dimensions]);
 
-  // --- Rendering ---
+  // --- Rendering Guides (Grid / Symmetry) ---
+  const renderGuides = useCallback(() => {
+      const canvas = guideCanvasRef.current;
+      if (!canvas || dimensions.width === 0 || dimensions.height === 0) return;
+
+      const fullWidth = dimensions.width + (OVERSCAN_MARGIN * 2);
+      const fullHeight = dimensions.height + (OVERSCAN_MARGIN * 2);
+
+      if (canvas.width !== fullWidth || canvas.height !== fullHeight) {
+          canvas.width = fullWidth;
+          canvas.height = fullHeight;
+      }
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // --- Grid Rendering (CENTERED) ---
+      if (isGridEnabled && !isPlaying && !exportConfig?.isActive) {
+          ctx.save();
+          ctx.fillStyle = guideColor;
+          ctx.globalAlpha = 1; 
+          
+          const centerX = fullWidth / 2;
+          const centerY = fullHeight / 2;
+
+          const startX = (centerX % gridSize);
+          const startY = (centerY % gridSize);
+
+          for (let x = startX; x <= fullWidth; x += gridSize) {
+              for (let y = startY; y <= fullHeight; y += gridSize) {
+                  ctx.beginPath();
+                  ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+                  ctx.fill();
+              }
+          }
+          ctx.restore();
+      }
+
+      // --- Symmetry Guides Rendering (CENTERED) ---
+      if (symmetryMode !== SymmetryMode.NONE && !isEmbedMode && !exportConfig?.isActive && !isPlaying) {
+          ctx.save();
+          ctx.beginPath();
+          
+          ctx.strokeStyle = guideColor; 
+          ctx.setLineDash([4, 6]); 
+          ctx.lineWidth = 1; 
+          
+          const centerX = (dimensions.width / 2) + OVERSCAN_MARGIN;
+          const centerY = (dimensions.height / 2) + OVERSCAN_MARGIN;
+
+          if (symmetryMode === SymmetryMode.HORIZONTAL || symmetryMode === SymmetryMode.QUAD || symmetryMode === SymmetryMode.CENTRAL) {
+              ctx.moveTo(centerX, 0);
+              ctx.lineTo(centerX, fullHeight);
+          }
+          if (symmetryMode === SymmetryMode.VERTICAL || symmetryMode === SymmetryMode.QUAD) {
+              ctx.moveTo(0, centerY);
+              ctx.lineTo(fullWidth, centerY);
+          }
+          
+          ctx.stroke();
+          ctx.restore();
+      }
+  }, [dimensions, isGridEnabled, gridSize, guideColor, isPlaying, exportConfig, symmetryMode, isEmbedMode]);
+
+
+  // --- Rendering Layers ---
   const renderLayer = useCallback((layerIndex: number) => {
     const canvas = offscreenCanvases.current[layerIndex];
     if (!canvas || dimensions.width === 0 || dimensions.height === 0) return;
@@ -256,52 +329,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // --- Grid Rendering (CENTERED) ---
-    if (isGridEnabled && layerIndex === activeLayer && !isPlaying && !exportConfig?.isActive) {
-        ctx.save();
-        ctx.fillStyle = guideColor;
-        ctx.globalAlpha = 1; 
-        
-        const centerX = fullWidth / 2;
-        const centerY = fullHeight / 2;
-
-        const startX = (centerX % gridSize);
-        const startY = (centerY % gridSize);
-
-        for (let x = startX; x <= fullWidth; x += gridSize) {
-            for (let y = startY; y <= fullHeight; y += gridSize) {
-                ctx.beginPath();
-                ctx.arc(x, y, 1.5, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-        ctx.restore();
-    }
-
-    // --- Symmetry Guides Rendering (CENTERED) ---
-    if (layerIndex === activeLayer && symmetryMode !== SymmetryMode.NONE && !isEmbedMode && !exportConfig?.isActive && !isPlaying) {
-        ctx.save();
-        ctx.beginPath();
-        
-        ctx.strokeStyle = guideColor; 
-        ctx.setLineDash([4, 6]); 
-        ctx.lineWidth = 1; 
-        
-        const centerX = (dimensions.width / 2) + OVERSCAN_MARGIN;
-        const centerY = (dimensions.height / 2) + OVERSCAN_MARGIN;
-
-        if (symmetryMode === SymmetryMode.HORIZONTAL || symmetryMode === SymmetryMode.QUAD || symmetryMode === SymmetryMode.CENTRAL) {
-            ctx.moveTo(centerX, 0);
-            ctx.lineTo(centerX, fullHeight);
-        }
-        if (symmetryMode === SymmetryMode.VERTICAL || symmetryMode === SymmetryMode.QUAD) {
-            ctx.moveTo(0, centerY);
-            ctx.lineTo(fullWidth, centerY);
-        }
-        
-        ctx.stroke();
-        ctx.restore();
-    }
+    // NOTE: Grid and Symmetry are now rendered in renderGuides on a separate canvas
 
     const layerStrokes = strokes.filter(s => s.layerId === layerIndex);
 
@@ -310,13 +338,59 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
         const start = denormalizePoint(stroke.points[0], dimensions.width, dimensions.height);
         
+        // --- Helper Function for Drawing Path ---
+        // This abstracts the drawing logic for both Stroke and Fill
+        const drawPath = (context: CanvasRenderingContext2D) => {
+            context.beginPath();
+            context.moveTo(start.x, start.y);
+
+            if (stroke.roundness && stroke.roundness > 0) {
+                // ROUNDED CORNER LOGIC
+                // We map 0-100 roundness to a 0.0 - 0.5 ratio
+                // 0.5 means the curve starts at the midpoint of the segment
+                const ratio = (stroke.roundness / 100) * 0.5;
+
+                for (let i = 1; i < stroke.points.length - 1; i++) {
+                    const pPrev = denormalizePoint(stroke.points[i - 1], dimensions.width, dimensions.height);
+                    const pCurr = denormalizePoint(stroke.points[i], dimensions.width, dimensions.height);
+                    const pNext = denormalizePoint(stroke.points[i + 1], dimensions.width, dimensions.height);
+
+                    // Vectors
+                    const vIn = { x: pCurr.x - pPrev.x, y: pCurr.y - pPrev.y };
+                    const vOut = { x: pNext.x - pCurr.x, y: pNext.y - pCurr.y };
+
+                    // Lengths
+                    const lenIn = Math.sqrt(vIn.x * vIn.x + vIn.y * vIn.y);
+                    const lenOut = Math.sqrt(vOut.x * vOut.x + vOut.y * vOut.y);
+
+                    // Determine curve start/end points
+                    // We use the simpler scalar interpolation approach since we are on a grid mostly
+                    // Start point is 'ratio' distance back from Current along Previous-Current line
+                    const startX = pCurr.x - (vIn.x / lenIn) * (lenIn * ratio);
+                    const startY = pCurr.y - (vIn.y / lenIn) * (lenIn * ratio);
+
+                    // End point is 'ratio' distance forward from Current along Current-Next line
+                    const endX = pCurr.x + (vOut.x / lenOut) * (lenOut * ratio);
+                    const endY = pCurr.y + (vOut.y / lenOut) * (lenOut * ratio);
+
+                    context.lineTo(startX, startY);
+                    context.quadraticCurveTo(pCurr.x, pCurr.y, endX, endY);
+                }
+                // Connect to final point
+                const last = denormalizePoint(stroke.points[stroke.points.length - 1], dimensions.width, dimensions.height);
+                context.lineTo(last.x, last.y);
+
+            } else {
+                // STANDARD SHARP CORNERS
+                for (let i = 1; i < stroke.points.length; i++) {
+                    const p = denormalizePoint(stroke.points[i], dimensions.width, dimensions.height);
+                    context.lineTo(p.x, p.y);
+                }
+            }
+        };
+
         if (stroke.fillColorSlot !== undefined && stroke.fillColorSlot !== -1) {
-             ctx.beginPath();
-             ctx.moveTo(start.x, start.y);
-             for (let i = 1; i < stroke.points.length; i++) {
-                const p = denormalizePoint(stroke.points[i], dimensions.width, dimensions.height);
-                ctx.lineTo(p.x, p.y);
-             }
+             drawPath(ctx);
              ctx.closePath(); 
              ctx.fillStyle = palette[stroke.fillColorSlot] || 'transparent';
              
@@ -330,12 +404,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         }
 
         if (stroke.isStrokeEnabled !== false || stroke.tool === ToolType.ERASER) {
-            ctx.beginPath();
-            ctx.moveTo(start.x, start.y);
-            for (let i = 1; i < stroke.points.length; i++) {
-                const p = denormalizePoint(stroke.points[i], dimensions.width, dimensions.height);
-                ctx.lineTo(p.x, p.y);
-            }
+            drawPath(ctx);
 
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
@@ -379,21 +448,32 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   useEffect(() => {
     // Render loop for 9 layers
     [0, 1, 2, 3, 4, 5, 6, 7, 8].forEach(renderLayer);
-  }, [strokes, renderLayer, selectedStrokeId, dimensions, palette, symmetryMode, guideColor, isGridEnabled]);
+    
+    // Render guides
+    renderGuides();
+  }, [strokes, renderLayer, renderGuides, selectedStrokeId, dimensions, palette, symmetryMode, guideColor, isGridEnabled]);
 
   const applyParallaxTransforms = (currentX: number, currentY: number) => {
+    // Apply transform to layer canvases
     const layers = containerRef.current?.querySelectorAll('.layer-canvas');
     layers?.forEach((layer, i) => {
         const { x, y } = calculateLayerOffset(i, currentX, currentY);
         (layer as HTMLElement).style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
     });
+
+    // Apply active layer transform to guide canvas
+    const guideLayer = containerRef.current?.querySelector('#guide-overlay');
+    if (guideLayer) {
+        const { x, y } = calculateLayerOffset(activeLayer, currentX, currentY);
+        (guideLayer as HTMLElement).style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+    }
   };
 
   useLayoutEffect(() => {
     if (dimensions.width > 0 && dimensions.height > 0) {
         applyParallaxTransforms(currentOffset.current.x, currentOffset.current.y);
     }
-  }, [dimensions, focalLayerIndex, parallaxStrength, parallaxInverted, calculateLayerOffset]);
+  }, [dimensions, focalLayerIndex, parallaxStrength, parallaxInverted, calculateLayerOffset, activeLayer]);
 
   useEffect(() => {
       if (exportConfig?.isRecording && !recorderRef.current) {
@@ -463,8 +543,32 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         
         if (!isDrawing.current && !exportConfig?.isActive && !useGyroscope && !isViewLocked.current && isPlaying) {
             const { width, height, left, top } = containerRef.current.getBoundingClientRect();
-            const x = ((e.clientX - left) / width) * 2 - 1;
-            const y = ((e.clientY - top) / height) * 2 - 1;
+            
+            // Raw mouse position from top-left
+            let mouseX = e.clientX - left;
+            let mouseY = e.clientY - top;
+
+            // Default normalized coordinates (used if snapping is off)
+            let x = (mouseX / width) * 2 - 1;
+            let y = (mouseY / height) * 2 - 1;
+
+            // SNAP LOGIC FOR PLAY MODE
+            if (isGridEnabled && isSnappingEnabled) {
+                 const centerX = width / 2;
+                 const centerY = height / 2;
+                 
+                 // Pixel distance from center
+                 let pxFromCenterX = mouseX - centerX;
+                 let pxFromCenterY = mouseY - centerY;
+                 
+                 // Snap to grid
+                 pxFromCenterX = Math.round(pxFromCenterX / gridSize) * gridSize;
+                 pxFromCenterY = Math.round(pxFromCenterY / gridSize) * gridSize;
+                 
+                 // Recalculate normalized coords (relative to center, range -1 to 1)
+                 x = pxFromCenterX / centerX; 
+                 y = pxFromCenterY / centerY;
+            }
             
             if (!isDraggingView.current) {
                 targetOffset.current = { x, y };
@@ -486,7 +590,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 isEraser: activeTool === ToolType.ERASER,
                 blendMode: activeBlendMode,
                 fillBlendMode: activeFillBlendMode,
-                isStrokeEnabled: isStrokeEnabled
+                isStrokeEnabled: isStrokeEnabled,
+                roundness: isGridEnabled ? gridRoundness : 0 // Apply grid roundness
             };
 
             const allNewStrokes = generateSymmetryStrokes(baseStroke);
@@ -510,7 +615,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 isEraser: activeTool === ToolType.ERASER,
                 blendMode: activeBlendMode,
                 fillBlendMode: activeFillBlendMode,
-                isStrokeEnabled: isStrokeEnabled
+                isStrokeEnabled: isStrokeEnabled,
+                roundness: isGridEnabled ? gridRoundness : 0 // Apply grid roundness
             };
             
             const allNewStrokes = generateSymmetryStrokes(baseStroke);
@@ -572,7 +678,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         window.removeEventListener('mouseup', handleWindowMouseUp);
         window.removeEventListener('deviceorientation', handleOrientation);
     }
-  }, [isPlaying, useGyroscope, isLowPowerMode, parallaxStrength, focalLayerIndex, parallaxInverted, exportConfig, strokes, activeTool, activeLayer, brushSize, isFillEnabled, activeColorSlot, activeSecondaryColorSlot, activeBlendMode, activeFillBlendMode, isStrokeEnabled]);
+  }, [isPlaying, useGyroscope, isLowPowerMode, parallaxStrength, focalLayerIndex, parallaxInverted, exportConfig, strokes, activeTool, activeLayer, brushSize, isFillEnabled, activeColorSlot, activeSecondaryColorSlot, activeBlendMode, activeFillBlendMode, isStrokeEnabled, isGridEnabled, isSnappingEnabled, gridSize, gridRoundness]);
 
   const animationLoop = () => {
     let nextX = currentOffset.current.x;
@@ -960,6 +1066,19 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 </div>
             );
         })}
+
+        {/* GUIDE OVERLAY (Grid / Symmetry) - Unblurred, transforms with active layer */}
+        <div 
+            id="guide-overlay"
+            className="absolute left-1/2 top-1/2 w-full h-full pointer-events-none will-change-transform"
+            style={{ zIndex: 100 }}
+        >
+            <canvas 
+                ref={guideCanvasRef}
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+            />
+        </div>
+
         {/* Visual Indicators for View Lock */}
         {isLockedUI && (
             <>
@@ -993,4 +1112,4 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         )}
     </>
   );
-};
+}

@@ -7,12 +7,21 @@ interface SliderProps {
   max: number;
   step: number;
   onChange: (val: number) => void;
+  onCommit?: (val: number) => void;
   disabled?: boolean;
 }
 
-export const Slider: React.FC<SliderProps> = ({ value, min, max, step, onChange, disabled }) => {
+export const Slider: React.FC<SliderProps> = ({ value, min, max, step, onChange, onCommit, disabled }) => {
   // Calculate percentage for the linear-gradient background (Filled vs Track color)
   const percent = ((value - min) / (max - min)) * 100;
+
+  const handleCommit = (e: React.MouseEvent | React.TouchEvent) => {
+      // We pass the current value when interaction ends
+      if (onCommit) {
+          onCommit(value);
+      }
+      e.stopPropagation();
+  };
 
   return (
     <div className={`relative w-full h-6 flex items-center ${disabled ? 'opacity-50' : ''}`}>
@@ -59,6 +68,8 @@ export const Slider: React.FC<SliderProps> = ({ value, min, max, step, onChange,
         value={value}
         disabled={disabled}
         onChange={(e) => onChange(parseFloat(e.target.value))}
+        onMouseUp={handleCommit}
+        onTouchEnd={handleCommit}
         onMouseDown={(e) => e.stopPropagation()} // Prevent Menu closing
         onTouchStart={(e) => e.stopPropagation()} // Prevent Menu closing
         className="custom-range w-full appearance-none bg-transparent focus:outline-none"

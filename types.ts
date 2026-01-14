@@ -6,6 +6,12 @@ export enum ToolType {
   SELECT = 'SELECT',
 }
 
+// --- CONSTANTS ---
+export const LAYER_COUNT = 9;
+export const MAX_LAYER_INDEX = 8;
+export const MIN_LAYER_INDEX = 0;
+export const DEFAULT_LAYER_INDEX = 4; // Middle of 0-8
+
 export enum EraserMode {
   STANDARD = 'STANDARD',
   STROKE = 'STROKE' // Erase whole stroke
@@ -18,6 +24,8 @@ export enum SymmetryMode {
   QUAD = 'QUAD',             // Mirror Both
   CENTRAL = 'CENTRAL'        // Point Reflection (Inverted)
 }
+
+export type ViewMode = 'CREATION' | 'VIEW' | 'EMBED';
 
 export interface Point {
   x: number;
@@ -120,22 +128,23 @@ export interface ShortcutConfig {
 }
 
 export interface AppState {
+  viewMode: ViewMode;
   activeTool: ToolType;
-  activeLayer: number; // 0 to 4
+  activeLayer: number; // 0 to 8
   brushSize: number;
   eraserSize: number; // New: Decoupled eraser size
-  activeColorSlot: number; // 0 to 4
-  activeSecondaryColorSlot: number; // 0 to 4 (Fill color)
+  activeColorSlot: number; // 0 to 6
+  activeSecondaryColorSlot: number; // 0 to 6 (Fill color)
   activeBlendMode: BlendMode;
   activeFillBlendMode: BlendMode;
   isFillEnabled: boolean;
   isColorSynced: boolean; // New: If true, fill color follows stroke color
   isStrokeEnabled: boolean; 
-  palette: string[]; // Array of 5 hex codes
+  palette: string[]; // Array of 7 hex codes
   parallaxStrength: number;
   parallaxInverted: boolean; 
   springConfig: SpringConfig;
-  focalLayerIndex: number; // The layer that stays still (0-4)
+  focalLayerIndex: number; // The layer that stays still (0-8)
   isPlaying: boolean;
   useGyroscope: boolean; // New: Use device orientation for parallax
   isLowPowerMode: boolean; // New: Disables springs and loops for battery saving

@@ -1,11 +1,10 @@
 
-
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Toolbar } from './components/Toolbar';
 import { LayerSlider } from './components/LayerSlider';
 import { DrawingCanvas } from './components/DrawingCanvas';
 import { MenuOverlay } from './components/MenuOverlay';
-import { ToolType, AppState, Stroke, EraserMode, BlendMode, TrajectoryType, SymmetryMode, ShortcutConfig, ShortcutAction, KeyBinding, UITheme } from './types';
+import { ToolType, AppState, Stroke, EraserMode, BlendMode, TrajectoryType, SymmetryMode, ShortcutConfig, ShortcutAction, KeyBinding, UITheme, MAX_LAYER_INDEX, MIN_LAYER_INDEX, DEFAULT_LAYER_INDEX, LAYER_COUNT } from './types';
 import { v4 as uuidv4 } from 'uuid';
 // @ts-ignore
 import LZString from 'lz-string';
@@ -36,6 +35,14 @@ const PRESET_PALETTES = [
     ['#03045e', '#023e8a', '#0077b6', '#0096c7', '#00b4d8', '#48bfe3', '#90e0ef']
 ];
 
+// Default Objects for 9 Layers
+const DEFAULT_LAYER_BLEND_MODES: Record<number, BlendMode> = { 
+    0: 'normal', 1: 'normal', 2: 'normal', 3: 'normal', 4: 'normal', 5: 'normal', 6: 'normal', 7: 'normal', 8: 'normal' 
+};
+const DEFAULT_LAYER_BLUR_STRENGTHS: Record<number, number> = { 
+    0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0 
+};
+
 // Helper Component for Shortcuts Overlay
 const ShortcutsOverlay = ({ onClose, isEmbed }: { onClose: () => void, isEmbed: boolean }) => (
     <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in" onClick={onClose}>
@@ -61,8 +68,12 @@ const ShortcutsOverlay = ({ onClose, isEmbed }: { onClose: () => void, isEmbed: 
                             <div className="flex gap-1"><kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">Cmd+Z</kbd> / <kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">Cmd+Shift+Z</kbd></div>
                         </div>
                         <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-                            <span>Export JSON</span>
-                            <div className="flex gap-1"><kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">E</kbd></div>
+                            <span>Select Layer</span>
+                            <div className="flex gap-1"><kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">W</kbd> / <kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">S</kbd></div>
+                        </div>
+                         <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                            <span>Focus Depth</span>
+                            <div className="flex gap-1"><Icons.ArrowUp size={12}/> / <Icons.ArrowDown size={12}/></div>
                         </div>
                     </>
                 )}
@@ -79,18 +90,6 @@ const ShortcutsOverlay = ({ onClose, isEmbed }: { onClose: () => void, isEmbed: 
                 <div className="flex justify-between items-center pb-2 border-b border-gray-100">
                     <span>Prev / Next Palette</span>
                     <div className="flex gap-1"><kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">A</kbd> / <kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">D</kbd></div>
-                </div>
-                 <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-                    <span>Focus Layer</span>
-                    <div className="flex gap-1"><kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">W</kbd> / <kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">S</kbd></div>
-                </div>
-                 <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-                    <span>Active Layer</span>
-                    <div className="flex gap-1"><Icons.ArrowUp size={12}/> / <Icons.ArrowDown size={12}/></div>
-                </div>
-                <div className="flex justify-between items-center">
-                    <span>Depth of Field</span>
-                    <div className="flex gap-1"><span className="text-xs italic">Shift + Scroll</span> {isEmbed && <span>or <span className="text-xs italic">Pinch</span></span>}</div>
                 </div>
             </div>
         </div>
@@ -113,10 +112,12 @@ const DEFAULT_SHORTCUTS: ShortcutConfig = {
         'COLOR_7': [{ key: '7' }],
         'PREV_PALETTE': [{ key: 'a' }],
         'NEXT_PALETTE': [{ key: 'd' }],
-        'LAYER_NEXT': [{ key: 'ArrowUp' }], // Front
-        'LAYER_PREV': [{ key: 'ArrowDown' }], // Back
-        'FOCUS_NEXT': [{ key: 's' }], // Front
-        'FOCUS_PREV': [{ key: 'w' }], // Back
+        
+        'LAYER_NEXT': [{ key: 'w' }, { key: 'ArrowUp' }], // Select UP (Front)
+        'LAYER_PREV': [{ key: 's' }, { key: 'ArrowDown' }], // Select DOWN (Back)
+        'FOCUS_NEXT': [{ key: 'ArrowUp', shift: true }], // Focus Forward
+        'FOCUS_PREV': [{ key: 'ArrowDown', shift: true }], // Focus Backward
+        
         'TOGGLE_GYRO': [],
         'TOGGLE_MENU': [],
         'EXPORT': [{ key: 'e' }],
@@ -148,10 +149,10 @@ const DEFAULT_SHORTCUTS: ShortcutConfig = {
         'COLOR_7': [{ key: '7' }],
         'PREV_PALETTE': [],
         'NEXT_PALETTE': [{ key: 'd' }, { key: 'ArrowRight' }],
-        'LAYER_NEXT': [{ key: 'ArrowUp' }],
-        'LAYER_PREV': [{ key: 'ArrowDown' }],
-        'FOCUS_NEXT': [{ key: 's' }],
-        'FOCUS_PREV': [{ key: 'w' }],
+        'LAYER_NEXT': [{ key: 'w' }, { key: 'ArrowUp' }],
+        'LAYER_PREV': [{ key: 's' }, { key: 'ArrowDown' }],
+        'FOCUS_NEXT': [],
+        'FOCUS_PREV': [],
         'TOGGLE_GYRO': [{ key: 'a' }, { key: 'ArrowLeft' }],
         'TOGGLE_MENU': [{ key: 'm' }],
         'EXPORT': [],
@@ -196,7 +197,7 @@ export default function App() {
     return {
         viewMode: initialMode,
         activeTool: ToolType.BRUSH,
-        activeLayer: 3, 
+        activeLayer: DEFAULT_LAYER_INDEX, // Correctly set to Middle Layer
         brushSize: 10,
         eraserSize: 30,
         activeColorSlot: 0,
@@ -210,7 +211,7 @@ export default function App() {
         parallaxStrength: pStrength ? parseInt(pStrength) : 10, 
         parallaxInverted: false,
         springConfig: { stiffness: 0.2, damping: 0.2 }, 
-        focalLayerIndex: 3, 
+        focalLayerIndex: DEFAULT_LAYER_INDEX, // Correctly set to Middle Layer
         isPlaying: initialMode !== 'CREATION', // Auto-play in view/embed
         useGyroscope: isMobile, 
         isLowPowerMode: true, 
@@ -225,6 +226,7 @@ export default function App() {
         isSnappingEnabled: true,
         isParallaxSnappingEnabled: false,
         gridSize: 40,
+        gridRoundness: 0, // Default sharp
         symmetryMode: SymmetryMode.NONE,
         
         // Visual
@@ -233,8 +235,9 @@ export default function App() {
         focusRange: 0,
 
         globalLayerBlendMode: 'normal',
-        layerBlendModes: { 0: 'normal', 1: 'normal', 2: 'normal', 3: 'normal', 4: 'normal', 5: 'normal', 6: 'normal' },
-        layerBlurStrengths: { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
+        // Initialize with default 9-layer objects
+        layerBlendModes: { ...DEFAULT_LAYER_BLEND_MODES },
+        layerBlurStrengths: { ...DEFAULT_LAYER_BLUR_STRENGTHS },
         
         uiTheme: {
             appBg: "#f8f8f6",
@@ -258,7 +261,7 @@ export default function App() {
             scrollbarTrack: "#efeadc",
             disabledColor: "#d4cdb7"
         },
-        
+        isEmbedMode: initialMode === 'EMBED', // Keep legacy compatibility
         isTransparentEmbed: isTransparent,
         embedStyle: {
             borderRadius: pRadius ? parseInt(pRadius) : 0,
@@ -342,7 +345,8 @@ export default function App() {
           if (Math.abs(e.deltaY) > 10) {
               setState(s => {
                   const dir = e.deltaY > 0 ? -1 : 1;
-                  const next = Math.max(0, Math.min(6, s.activeLayer + dir));
+                  // Corrected Limit to MAX_LAYER_INDEX (8)
+                  const next = Math.max(MIN_LAYER_INDEX, Math.min(MAX_LAYER_INDEX, s.activeLayer + dir));
                   if (next === s.activeLayer) return s;
                   return { ...s, activeLayer: next };
               });
@@ -352,7 +356,7 @@ export default function App() {
       return () => window.removeEventListener('wheel', handleWheel);
   }, [state.isMenuOpen, state.viewMode]);
 
-  const loadData = (data: any) => {
+  const loadData = (data: any, isTransparent: boolean) => {
       if (!data) return;
       if (data.s) {
           const reconstructedStrokes: Stroke[] = data.s.map((minStroke: any) => ({
@@ -366,7 +370,8 @@ export default function App() {
               isEraser: minStroke.t === 1,
               blendMode: minStroke.bm || 'normal',
               fillBlendMode: minStroke.fbm || 'normal',
-              isStrokeEnabled: true
+              isStrokeEnabled: true,
+              roundness: minStroke.r || 0 // Load roundness
           }));
           setHistory([reconstructedStrokes]);
           setHistoryIndex(0);
@@ -379,10 +384,11 @@ export default function App() {
               canvasWidth: data.c.cw ?? s.canvasWidth,
               focalLayerIndex: data.c.fl ?? s.focalLayerIndex,
               // Keep transparency override if set in state
-              canvasBackgroundColor: s.isTransparentEmbed ? 'transparent' : (data.c.bg ?? s.canvasBackgroundColor),
+              canvasBackgroundColor: isTransparent ? 'transparent' : (data.c.bg ?? s.canvasBackgroundColor),
               blurStrength: data.c.bs ?? s.blurStrength,
               focusRange: data.c.fr ?? s.focusRange,
-              symmetryMode: data.c.sm ?? SymmetryMode.NONE
+              symmetryMode: data.c.sm ?? SymmetryMode.NONE,
+              gridRoundness: data.c.gr ?? 0 // Load grid roundness setting
               }));
           }
       } 
@@ -392,8 +398,12 @@ export default function App() {
           setState(s => ({ 
               ...s, 
               ...data.config, 
+              // Safe merge for Blend Modes and Blur Strengths to ensure 9 layers exist
+              layerBlendModes: { ...DEFAULT_LAYER_BLEND_MODES, ...(data.config.layerBlendModes || {}) },
+              layerBlurStrengths: { ...DEFAULT_LAYER_BLUR_STRENGTHS, ...(data.config.layerBlurStrengths || {}) },
+              
               // Ensure canvasBackgroundColor is loaded correctly from either key
-              canvasBackgroundColor: s.isTransparentEmbed ? 'transparent' : (data.config.canvasBackgroundColor || data.config.backgroundColor || s.canvasBackgroundColor),
+              canvasBackgroundColor: isTransparent ? 'transparent' : (data.config.canvasBackgroundColor || data.config.backgroundColor || s.canvasBackgroundColor),
               palette: data.palette || s.palette 
           }));
       }
@@ -429,7 +439,8 @@ export default function App() {
             layerBlurStrengths: state.layerBlurStrengths,
             blurStrength: state.blurStrength,
             focusRange: state.focusRange,
-            symmetryMode: state.symmetryMode
+            symmetryMode: state.symmetryMode,
+            gridRoundness: state.gridRoundness
         }
     });
     const blob = new Blob([data], { type: 'application/json' });
@@ -449,7 +460,7 @@ export default function App() {
               const target = ev.target as FileReader;
               if (target?.result && typeof target.result === 'string') {
                   const data = JSON.parse(target.result as string);
-                  loadData(data);
+                  loadData(data, state.isTransparentEmbed);
               }
           } catch (err) {
               console.error("Failed to parse JSON", err);
@@ -545,11 +556,13 @@ export default function App() {
                   case 'PREV_PALETTE': handleCyclePalette(-1); break;
                   case 'NEXT_PALETTE': handleCyclePalette(1); break;
                   
-                  case 'LAYER_NEXT': setState(s => ({ ...s, activeLayer: Math.min(6, s.activeLayer + 1) })); break;
-                  case 'LAYER_PREV': setState(s => ({ ...s, activeLayer: Math.max(0, s.activeLayer - 1) })); break;
+                  // Corrected Limit to MAX_LAYER_INDEX (8)
+                  case 'LAYER_NEXT': setState(s => ({ ...s, activeLayer: Math.min(MAX_LAYER_INDEX, s.activeLayer + 1) })); break;
+                  case 'LAYER_PREV': setState(s => ({ ...s, activeLayer: Math.max(MIN_LAYER_INDEX, s.activeLayer - 1) })); break;
                   
-                  case 'FOCUS_NEXT': setState(s => ({ ...s, focalLayerIndex: Math.min(6, s.focalLayerIndex + 1) })); break;
-                  case 'FOCUS_PREV': setState(s => ({ ...s, focalLayerIndex: Math.max(0, s.focalLayerIndex - 1) })); break;
+                  // Corrected Limit to MAX_LAYER_INDEX (8)
+                  case 'FOCUS_NEXT': setState(s => ({ ...s, focalLayerIndex: Math.min(MAX_LAYER_INDEX, s.focalLayerIndex + 1) })); break;
+                  case 'FOCUS_PREV': setState(s => ({ ...s, focalLayerIndex: Math.max(MIN_LAYER_INDEX, s.focalLayerIndex - 1) })); break;
                   
                   case 'COLOR_1': handleColorPick(0); break;
                   case 'COLOR_2': handleColorPick(1); break;
@@ -595,7 +608,8 @@ export default function App() {
                        });
                        break;
                   }
-                  case 'RANDOM_LAYER': setState(s => ({ ...s, activeLayer: Math.floor(Math.random() * 7) })); break;
+                  // Corrected Random Range to 9
+                  case 'RANDOM_LAYER': setState(s => ({ ...s, activeLayer: Math.floor(Math.random() * LAYER_COUNT) })); break;
                   case 'RANDOM_COLOR': {
                        const slot = Math.floor(Math.random() * 7);
                        handleColorPick(slot);
@@ -651,19 +665,49 @@ export default function App() {
                 return res.json();
             })
             .then(data => {
-                loadData(data);
+                const isEmbed = params.get('mode') === 'embed';
+                loadData(data, isEmbed && params.get('bg') === 'transparent');
+                if (isEmbed) {
+                    setState(s => ({ ...s, viewMode: 'EMBED', isPlaying: true }));
+                }
             })
             .catch(err => console.error("Failed to load shared drawing", err));
     }
 
-    // External URL loading support
-    const externalUrl = params.get('url');
-    if (externalUrl) {
-        const decodedUrl = decodeURIComponent(externalUrl);
-        fetch(decodedUrl)
-            .then(res => { if (!res.ok) throw new Error("Failed"); return res.json(); })
-            .then(data => loadData(data))
-            .catch(err => console.error("Ext error", err));
+    // Existing Embed Logic
+    if (params.get('mode') === 'embed' && !sharedId) {
+        const isTransparent = params.get('bg') === 'transparent';
+        const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        
+        // Load params...
+        const pRadius = params.get('borderRadius');
+        const pBorderW = params.get('borderWidth');
+        const pBorderC = params.get('borderColor');
+
+        setState(s => ({
+            ...s,
+            viewMode: 'EMBED',
+            isTransparentEmbed: isTransparent,
+            isPlaying: true,
+            // ... (other params same as before)
+            parallaxStrength: parseInt(params.get('strength') || '50'),
+            canvasBackgroundColor: isTransparent ? 'transparent' : (params.get('bg') ? '#' + params.get('bg') : '#FFFFFF'),
+            useGyroscope: isMobileDevice,
+            embedStyle: {
+                borderRadius: pRadius ? parseInt(pRadius) : 0,
+                borderWidth: pBorderW ? parseInt(pBorderW) : 0,
+                borderColor: pBorderC ? '#' + pBorderC : '#000000'
+            }
+        }));
+
+        const externalUrl = params.get('url');
+        if (externalUrl) {
+            const decodedUrl = decodeURIComponent(externalUrl);
+            fetch(decodedUrl)
+                .then(res => { if (!res.ok) throw new Error("Failed"); return res.json(); })
+                .then(data => loadData(data, isTransparent))
+                .catch(err => console.error("Ext error", err));
+        }
     }
   }, []);
 
@@ -684,8 +728,15 @@ export default function App() {
   const handleUndo = () => { if (historyIndex > 0) setHistoryIndex(historyIndex - 1); };
   const handleRedo = () => { if (historyIndex < history.length - 1) setHistoryIndex(historyIndex + 1); };
   const handleReset = () => { handleStrokeCommit([]); };
+  
   const handleTogglePlay = async () => {
     if (isMobile && !state.isPlaying && state.useGyroscope) await requestGyroPermission();
+    
+    // Reset view lock if we are starting to play
+    if (!state.isPlaying) {
+        setViewLockTrigger({ type: 'RESET', ts: Date.now() });
+    }
+
     setState(s => ({ ...s, isPlaying: !s.isPlaying }));
   };
 
@@ -707,7 +758,8 @@ export default function App() {
             layerBlurStrengths: state.layerBlurStrengths,
             blurStrength: state.blurStrength,
             focusRange: state.focusRange,
-            symmetryMode: state.symmetryMode
+            symmetryMode: state.symmetryMode,
+            gridRoundness: state.gridRoundness
         }
     }); 
   }, [currentStrokes, state]);
@@ -738,6 +790,7 @@ export default function App() {
           baseStyle.height = '85vh';
           baseStyle.aspectRatio = '1/1';
           baseStyle.width = 'auto'; // Width driven by height + aspect ratio
+          baseStyle.maxWidth = '100%'; // Ensure it doesn't overflow on mobile
       } else {
           baseStyle.width = `calc(${state.canvasWidth / 100} * (100vw - (6 * var(--spacing-x))))`;
           baseStyle.height = '85vh';
@@ -865,6 +918,7 @@ export default function App() {
                     isSnappingEnabled={state.isSnappingEnabled}
                     isParallaxSnappingEnabled={state.isParallaxSnappingEnabled} // Added Prop
                     gridSize={state.gridSize}
+                    gridRoundness={state.gridRoundness} // Pass new prop
                     symmetryMode={state.symmetryMode}
                     useGyroscope={state.useGyroscope}
                     isLowPowerMode={state.isLowPowerMode}
@@ -918,6 +972,7 @@ export default function App() {
                 isGridEnabled={state.isGridEnabled}
                 isSnappingEnabled={state.isSnappingEnabled}
                 gridSize={state.gridSize}
+                gridRoundness={state.gridRoundness} // Pass new prop
                 symmetryMode={state.symmetryMode}
                 useGyroscope={state.useGyroscope}
                 isLowPowerMode={state.isLowPowerMode}
@@ -944,6 +999,7 @@ export default function App() {
                 onGridEnabledChange={(val) => setState(s => ({ ...s, isGridEnabled: val }))}
                 onSnappingEnabledChange={(val) => setState(s => ({ ...s, isSnappingEnabled: val }))}
                 onGridSizeChange={(val) => setState(s => ({ ...s, gridSize: val }))}
+                onGridRoundnessChange={(val) => setState(s => ({ ...s, gridRoundness: val }))} // Pass handler
                 onSymmetryModeChange={(val) => setState(s => ({ ...s, symmetryMode: val }))}
                 onUseGyroscopeChange={(val) => setState(s => ({ ...s, useGyroscope: val }))}
                 onLowPowerModeChange={(val) => setState(s => ({ ...s, isLowPowerMode: val }))}
