@@ -15,7 +15,7 @@ interface DebugOverlayProps {
 
 const CATEGORIES: Record<string, ShortcutAction[]> = {
     'Navigation': ['LAYER_NEXT', 'LAYER_PREV', 'FOCUS_NEXT', 'FOCUS_PREV', 'PREV_PALETTE', 'NEXT_PALETTE', 'RANDOM_LAYER'],
-    'Colors': ['COLOR_1', 'COLOR_2', 'COLOR_3', 'COLOR_4', 'COLOR_5', 'COLOR_6', 'COLOR_7', 'RANDOM_COLOR'],
+    'Colors': ['COLOR_1', 'COLOR_2', 'COLOR_3', 'COLOR_4', 'COLOR_5', 'COLOR_6', 'COLOR_7', 'COLOR_8', 'COLOR_9', 'RANDOM_COLOR'],
     'Canvas': ['PLAY_PAUSE', 'UNDO', 'REDO', 'RESET', 'TOGGLE_GYRO', 'LOCK_VIEW', 'RESET_VIEW', 'TOGGLE_GRID'],
     'System': ['EXPORT', 'TOGGLE_MENU', 'TOGGLE_DEBUG']
 };
@@ -44,6 +44,8 @@ const PRESET_SHORTCUTS: Record<string, ShortcutConfig> = {
             'COLOR_5': [{ key: '5' }],
             'COLOR_6': [{ key: '6' }],
             'COLOR_7': [{ key: '7' }],
+            'COLOR_8': [{ key: '8' }],
+            'COLOR_9': [{ key: '9' }],
             'PREV_PALETTE': [{ key: 'a' }],
             'NEXT_PALETTE': [{ key: 'd' }],
             
@@ -67,16 +69,16 @@ const PRESET_SHORTCUTS: Record<string, ShortcutConfig> = {
             'SYMMETRY_NEXT': [{ key: 'f' }],
             'COLOR_SLOT_NEXT': [{ key: 'x' }],
             'COLOR_SLOT_PREV': [{ key: 'y' }],
-            'RANDOM_LAYER': [{ key: '0' }], // New
-            'RANDOM_COLOR': [{ key: '8' }] // New
+            'RANDOM_LAYER': [{ key: '-' }], // New
+            'RANDOM_COLOR': [{ key: '0' }] // New
         },
         embed: {
             'UNDO': [], 'REDO': [],
             'PLAY_PAUSE': [{ key: ' ' }],
             'RESET': [{ key: 'r' }],
             'COLOR_1': [{ key: '1' }], 'COLOR_2': [{ key: '2' }], 'COLOR_3': [{ key: '3' }],
-            'COLOR_4': [{ key: '4' }], 'COLOR_5': [{ key: '5' }], 'COLOR_6': [{ key: '6' }],
-            'COLOR_7': [{ key: '7' }],
+            'COLOR_4': [{ key: '4' }], 'COLOR_5': [{ key: '5' }], 'COLOR_6': [{ key: '6' }], 'COLOR_7': [{ key: '7' }],
+            'COLOR_8': [{ key: '8' }], 'COLOR_9': [{ key: '9' }],
             'PREV_PALETTE': [],
             'NEXT_PALETTE': [{ key: 'd' }, { key: 'ArrowRight' }],
             'LAYER_NEXT': [{ key: 'w' }, { key: 'ArrowUp' }],
@@ -108,6 +110,7 @@ const PRESET_SHORTCUTS: Record<string, ShortcutConfig> = {
             'RESET': [{ key: 'r' }],
             'COLOR_1': [{ key: '1' }], 'COLOR_2': [{ key: '2' }], 'COLOR_3': [{ key: '3' }],
             'COLOR_4': [{ key: '4' }], 'COLOR_5': [{ key: '5' }], 'COLOR_6': [{ key: '6' }], 'COLOR_7': [{ key: '7' }],
+            'COLOR_8': [{ key: '8' }], 'COLOR_9': [{ key: '9' }],
             'PREV_PALETTE': [{ key: 'ArrowLeft' }],
             'NEXT_PALETTE': [{ key: 'ArrowRight' }],
             'LAYER_NEXT': [{ key: 'ArrowUp' }],
@@ -134,7 +137,7 @@ const PRESET_SHORTCUTS: Record<string, ShortcutConfig> = {
             'UNDO': [], 'REDO': [],
             'PLAY_PAUSE': [{ key: ' ' }],
             'RESET': [{ key: 'r' }],
-            'COLOR_1': [], 'COLOR_2': [], 'COLOR_3': [], 'COLOR_4': [], 'COLOR_5': [], 'COLOR_6': [], 'COLOR_7': [],
+            'COLOR_1': [], 'COLOR_2': [], 'COLOR_3': [], 'COLOR_4': [], 'COLOR_5': [], 'COLOR_6': [], 'COLOR_7': [], 'COLOR_8': [], 'COLOR_9': [],
             'PREV_PALETTE': [{ key: 'ArrowLeft' }],
             'NEXT_PALETTE': [{ key: 'ArrowRight' }],
             'LAYER_NEXT': [{ key: 'ArrowUp' }],

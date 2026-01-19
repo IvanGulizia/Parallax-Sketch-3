@@ -22,6 +22,15 @@
         font-family: 'Poppins', sans-serif;
         overflow: hidden;
       }
+      /* Global reset for focus outlines to maintain Zen aesthetic */
+      button:focus, [role="button"]:focus, input:focus, select:focus, textarea:focus {
+        outline: none !important;
+        box-shadow: none !important;
+      }
+      /* Remove tap highlight on mobile */
+      * {
+        -webkit-tap-highlight-color: transparent;
+      }
     </style>
   <script type="importmap">
 {

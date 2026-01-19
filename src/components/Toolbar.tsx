@@ -108,7 +108,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       : 'bg-[var(--tool-bg)] text-[var(--icon-color)] border-[var(--button-border)] hover:bg-[var(--secondary-bg)]'}
   `;
 
-  // Increased width to w-96 to fit 7 colors comfortably on one line
+  // Increased width to auto/max-500px to fit 9 colors comfortably
   const popupClass = "absolute top-full mt-4 left-1/2 -translate-x-1/2 backdrop-blur-md bg-white/95 flex gap-3 z-50 animate-in fade-in slide-in-from-top-2 duration-200 items-center justify-center border border-gray-200 shadow-lg";
 
   return (
@@ -143,7 +143,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             </button>
             
             {showColorPicker && (
-                <div className={`${popupClass} rounded-3xl p-4 flex-col gap-3 w-96`}>
+                <div className={`${popupClass} rounded-3xl p-4 flex-col gap-3 w-auto max-w-[500px]`}>
                     
                     {/* Tabs */}
                     <div className="flex bg-gray-100 rounded-full p-1 w-full mb-1">
@@ -196,7 +196,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                         {/* Palette */}
                         {((!isEditingFill) || (isEditingFill && isFillEnabled)) && (
                             <>
-                                <div className={`flex gap-2 justify-center flex-wrap items-center transition-opacity duration-200 ${isEditingFill && isColorSynced ? 'opacity-50 pointer-events-none grayscale' : 'opacity-100'}`}>
+                                <div className={`flex gap-2 justify-center flex-wrap items-center transition-opacity duration-200 ${isEditingFill && isColorSynced ? 'opacity-50 pointer-events-none grayscale' : 'opacity-100'}`} style={{ minWidth: '320px' }}>
                                     
                                     {palette.map((color, index) => {
                                         const isActive = isEditingFill 

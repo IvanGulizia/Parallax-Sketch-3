@@ -12,28 +12,48 @@ import LZString from 'lz-string';
 import { Icons } from './components/Icons';
 import { DebugOverlay } from './components/DebugOverlay';
 
-// Extended Harmonious Palettes (7 colors)
+// Extended Harmonious Palettes (9 colors)
 const PRESET_PALETTES = [
-    ['#E0BBE4', '#957DAD', '#D291BC', '#FEC8D8', '#FFDFD3', '#D6E2E9', '#F1E3D3'],
-    ['#F4F1DE', '#E07A5F', '#3D405B', '#81B29A', '#F2CC8F', '#9F86C0', '#5E548E'],
-    ['#CCD5AE', '#E9EDC9', '#FEFAE0', '#FAEDCD', '#D4A373', '#A3B18A', '#588157'],
-    ['#264653', '#2A9D8F', '#E9C46A', '#F4A261', '#E76F51', '#2B9348', '#8338EC'],
-    ['#4A4A4A', '#8C8C80', '#D8D4C5', '#EFEDE6', '#FDFCF8', '#2F3E46', '#CAD2C5'],
-    ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff'],
-    ['#a0c4ff', '#bdb2ff', '#ffc6ff', '#fffffc', '#d4d4d4', '#e2e2df', '#d2d2cf'],
-    ['#003049', '#d62828', '#f77f00', '#fcbf49', '#eae2b7', '#669bbc', '#006d77'],
-    ['#606c38', '#283618', '#fefae0', '#dda15e', '#bc6c25', '#a3b18a', '#588157'],
-    ['#2b2d42', '#8d99ae', '#edf2f4', '#ef233c', '#d90429', '#023047', '#ffb703'],
-    ['#fff100', '#ff8c00', '#e81123', '#ec008c', '#68217a', '#00188f', '#00bcf2'],
-    ['#dad7cd', '#a3b18a', '#588157', '#3a5a40', '#344e41', '#3a0ca3', '#4361ee'],
-    ['#000000', '#14213d', '#fca311', '#e5e5e5', '#ffffff', '#e0e1dd', '#778da9'],
-    ['#cdb4db', '#ffc8dd', '#ffafcc', '#bde0fe', '#a2d2ff', '#8d99ae', '#2b2d42'],
-    ['#7400b8', '#6930c3', '#5e60ce', '#5390d9', '#4ea8de', '#48bfe3', '#56cfe1'],
-    ['#e63946', '#f1faee', '#a8dadc', '#457b9d', '#1d3557', '#457b9d', '#a8dadc'],
-    ['#f8f9fa', '#e9ecef', '#dee2e6', '#ced4da', '#adb5bd', '#6c757d', '#495057'],
-    ['#ffe5ec', '#ffc2d1', '#ffb3c6', '#ff8fab', '#fb6f92', '#ff006e', '#8338ec'],
-    ['#d8e2dc', '#ffe5d9', '#ffcad4', '#f4acb7', '#9d8189', '#f2e9e4', '#c9ada7'],
-    ['#03045e', '#023e8a', '#0077b6', '#0096c7', '#00b4d8', '#48bfe3', '#90e0ef']
+    // 1. Soft Pastels (Extended)
+    ['#E0BBE4', '#957DAD', '#D291BC', '#FEC8D8', '#FFDFD3', '#D6E2E9', '#F1E3D3', '#FFFFFF', '#6A5B8E'],
+    // 2. Earthy Tones (Extended)
+    ['#F4F1DE', '#E07A5F', '#3D405B', '#81B29A', '#F2CC8F', '#9F86C0', '#5E548E', '#2A2C42', '#FAF9F6'],
+    // 3. Forest Hike
+    ['#CCD5AE', '#E9EDC9', '#FEFAE0', '#FAEDCD', '#D4A373', '#A3B18A', '#588157', '#3A5A40', '#FFFFFF'],
+    // 4. Deep Jungle
+    ['#264653', '#2A9D8F', '#E9C46A', '#F4A261', '#E76F51', '#2B9348', '#8338EC', '#1D3557', '#000000'],
+    // 5. Minimalist Grayscale
+    ['#4A4A4A', '#8C8C80', '#D8D4C5', '#EFEDE6', '#FDFCF8', '#2F3E46', '#CAD2C5', '#000000', '#FFFFFF'],
+    // 6. Candy Pop
+    ['#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff', '#bdb2ff', '#ffc6ff', '#fffffc'],
+    // 7. Cold Steel
+    ['#a0c4ff', '#bdb2ff', '#ffc6ff', '#fffffc', '#d4d4d4', '#e2e2df', '#d2d2cf', '#727270', '#333333'],
+    // 8. Retro Sun
+    ['#003049', '#d62828', '#f77f00', '#fcbf49', '#eae2b7', '#669bbc', '#006d77', '#8338ec', '#ff006e'],
+    // 9. Moss & Clay
+    ['#606c38', '#283618', '#fefae0', '#dda15e', '#bc6c25', '#a3b18a', '#588157', '#386641', '#f2e8cf'],
+    // 10. Comic Book
+    ['#2b2d42', '#8d99ae', '#edf2f4', '#ef233c', '#d90429', '#023047', '#ffb703', '#fb8500', '#000000'],
+    // 11. CMYK+
+    ['#fff100', '#ff8c00', '#e81123', '#ec008c', '#68217a', '#00188f', '#00bcf2', '#009e49', '#000000'],
+    // 12. Night Forest
+    ['#dad7cd', '#a3b18a', '#588157', '#3a5a40', '#344e41', '#3a0ca3', '#4361ee', '#b5179e', '#f72585'],
+    // 13. Dark Mode
+    ['#000000', '#14213d', '#fca311', '#e5e5e5', '#ffffff', '#e0e1dd', '#778da9', '#415a77', '#1b263b'],
+    // 14. Sweet Dreams
+    ['#cdb4db', '#ffc8dd', '#ffafcc', '#bde0fe', '#a2d2ff', '#8d99ae', '#2b2d42', '#ef233c', '#d90429'],
+    // 15. Synthwave
+    ['#7400b8', '#6930c3', '#5e60ce', '#5390d9', '#4ea8de', '#48bfe3', '#56cfe1', '#64dfdf', '#80ffdb'],
+    // 16. Maritime
+    ['#e63946', '#f1faee', '#a8dadc', '#457b9d', '#1d3557', '#03045e', '#0077b6', '#00b4d8', '#90e0ef'],
+    // 17. Neutral Office
+    ['#f8f9fa', '#e9ecef', '#dee2e6', '#ced4da', '#adb5bd', '#6c757d', '#495057', '#343a40', '#212529'],
+    // 18. Love Letter
+    ['#ffe5ec', '#ffc2d1', '#ffb3c6', '#ff8fab', '#fb6f92', '#ff006e', '#8338ec', '#3a0ca3', '#ffffff'],
+    // 19. Desert Rose
+    ['#d8e2dc', '#ffe5d9', '#ffcad4', '#f4acb7', '#9d8189', '#f2e9e4', '#c9ada7', '#4a4e69', '#22223b'],
+    // 20. Ocean Depths
+    ['#03045e', '#023e8a', '#0077b6', '#0096c7', '#00b4d8', '#48bfe3', '#90e0ef', '#caf0f8', '#ffffff']
 ];
 
 // Default Objects for 9 Layers
@@ -60,7 +80,7 @@ const ShortcutsOverlay = ({ onClose, isEmbed }: { onClose: () => void, isEmbed: 
                 </div>
                 <div className="flex justify-between items-center pb-2 border-b border-gray-100">
                     <span>Select Color</span>
-                    <div className="flex gap-1"><kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">1</kbd>...<kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">7</kbd></div>
+                    <div className="flex gap-1"><kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">1</kbd>...<kbd className="px-2 py-0.5 bg-gray-100 rounded border border-gray-200 font-mono text-xs">9</kbd></div>
                 </div>
                 {!isEmbed && (
                     <>
@@ -111,6 +131,8 @@ const DEFAULT_SHORTCUTS: ShortcutConfig = {
         'COLOR_5': [{ key: '5' }],
         'COLOR_6': [{ key: '6' }],
         'COLOR_7': [{ key: '7' }],
+        'COLOR_8': [{ key: '8' }], // New
+        'COLOR_9': [{ key: '9' }], // New
         'PREV_PALETTE': [{ key: 'a' }],
         'NEXT_PALETTE': [{ key: 'd' }],
         
@@ -133,8 +155,8 @@ const DEFAULT_SHORTCUTS: ShortcutConfig = {
         'SYMMETRY_NEXT': [{ key: 'f' }],
         'COLOR_SLOT_NEXT': [{ key: 'x' }],
         'COLOR_SLOT_PREV': [{ key: 'y' }],
-        'RANDOM_LAYER': [{ key: '0' }],
-        'RANDOM_COLOR': [{ key: '8' }]
+        'RANDOM_LAYER': [{ key: '-' }], // Moved from 0
+        'RANDOM_COLOR': [{ key: '0' }] // Moved from 8
     },
     embed: {
         'UNDO': [],
@@ -148,6 +170,8 @@ const DEFAULT_SHORTCUTS: ShortcutConfig = {
         'COLOR_5': [{ key: '5' }],
         'COLOR_6': [{ key: '6' }],
         'COLOR_7': [{ key: '7' }],
+        'COLOR_8': [{ key: '8' }],
+        'COLOR_9': [{ key: '9' }],
         'PREV_PALETTE': [],
         'NEXT_PALETTE': [{ key: 'd' }, { key: 'ArrowRight' }],
         'LAYER_NEXT': [{ key: 'w' }, { key: 'ArrowUp' }],
@@ -211,6 +235,7 @@ export default function App() {
         palette: PRESET_PALETTES[0], 
         parallaxStrength: pStrength ? parseInt(pStrength) : 10, 
         parallaxInverted: false,
+        skewStrength: 0, // Default 0
         springConfig: { stiffness: 0.2, damping: 0.2 }, 
         focalLayerIndex: DEFAULT_LAYER_INDEX, // Correctly set to Middle Layer
         isPlaying: initialMode !== 'CREATION', // Auto-play in view/embed
@@ -390,7 +415,8 @@ export default function App() {
               blurStrength: data.c.bs ?? s.blurStrength,
               focusRange: data.c.fr ?? s.focusRange,
               symmetryMode: data.c.sm ?? SymmetryMode.NONE,
-              gridRoundness: data.c.gr ?? 0 // Load grid roundness setting
+              gridRoundness: data.c.gr ?? 0, // Load grid roundness setting
+              skewStrength: data.c.sk ?? 0 // Load skew
               }));
           }
       } 
@@ -412,7 +438,8 @@ export default function App() {
               isGridEnabled: data.config.isGridEnabled ?? s.isGridEnabled,
               isSnappingEnabled: data.config.isSnappingEnabled ?? s.isSnappingEnabled,
               isParallaxSnappingEnabled: data.config.isParallaxSnappingEnabled ?? s.isParallaxSnappingEnabled,
-              gridSize: data.config.gridSize ?? s.gridSize
+              gridSize: data.config.gridSize ?? s.gridSize,
+              skewStrength: data.config.skewStrength ?? 0
           }));
       }
   };
@@ -450,7 +477,8 @@ export default function App() {
             isGridEnabled: state.isGridEnabled,
             isSnappingEnabled: state.isSnappingEnabled,
             isParallaxSnappingEnabled: state.isParallaxSnappingEnabled,
-            gridSize: state.gridSize
+            gridSize: state.gridSize,
+            skewStrength: state.skewStrength
         }
     }); 
   }, [currentStrokes, state]);
@@ -598,6 +626,8 @@ export default function App() {
                   case 'COLOR_5': handleColorPick(4); break;
                   case 'COLOR_6': handleColorPick(5); break;
                   case 'COLOR_7': handleColorPick(6); break;
+                  case 'COLOR_8': handleColorPick(7); break; // New
+                  case 'COLOR_9': handleColorPick(8); break; // New
 
                   case 'LOCK_VIEW': setViewLockTrigger({ type: 'LOCK', ts: Date.now() }); break;
                   case 'RESET_VIEW': setViewLockTrigger({ type: 'RESET', ts: Date.now() }); break;
@@ -623,14 +653,14 @@ export default function App() {
                   }
                   case 'COLOR_SLOT_NEXT': {
                        setState(s => {
-                           const next = (s.activeColorSlot + 1) % 7;
+                           const next = (s.activeColorSlot + 1) % 9; // Updated mod 9
                            return { ...s, activeColorSlot: next, activeSecondaryColorSlot: s.isColorSynced ? next : s.activeSecondaryColorSlot };
                        });
                        break;
                   }
                   case 'COLOR_SLOT_PREV': {
                        setState(s => {
-                           const prev = (s.activeColorSlot - 1 + 7) % 7;
+                           const prev = (s.activeColorSlot - 1 + 9) % 9; // Updated mod 9
                            return { ...s, activeColorSlot: prev, activeSecondaryColorSlot: s.isColorSynced ? prev : s.activeSecondaryColorSlot };
                        });
                        break;
@@ -638,7 +668,7 @@ export default function App() {
                   // Corrected Random Range to 9
                   case 'RANDOM_LAYER': setState(s => ({ ...s, activeLayer: Math.floor(Math.random() * LAYER_COUNT) })); break;
                   case 'RANDOM_COLOR': {
-                       const slot = Math.floor(Math.random() * 7);
+                       const slot = Math.floor(Math.random() * 9); // Updated to 9
                        handleColorPick(slot);
                        break;
                   }
@@ -916,6 +946,7 @@ export default function App() {
                     palette={state.palette}
                     parallaxStrength={state.parallaxStrength}
                     parallaxInverted={state.parallaxInverted}
+                    skewStrength={state.skewStrength} // NEW PROP
                     springConfig={state.springConfig}
                     focalLayerIndex={state.focalLayerIndex}
                     isPlaying={state.isPlaying}
@@ -925,9 +956,9 @@ export default function App() {
                     layerBlendModes={state.layerBlendModes}
                     isGridEnabled={state.isGridEnabled}
                     isSnappingEnabled={state.isSnappingEnabled}
-                    isParallaxSnappingEnabled={state.isParallaxSnappingEnabled} // Added Prop
+                    isParallaxSnappingEnabled={state.isParallaxSnappingEnabled} 
                     gridSize={state.gridSize}
-                    gridRoundness={state.gridRoundness} // Pass new prop
+                    gridRoundness={state.gridRoundness}
                     symmetryMode={state.symmetryMode}
                     useGyroscope={state.useGyroscope}
                     isLowPowerMode={state.isLowPowerMode}
@@ -945,7 +976,7 @@ export default function App() {
                     isMobile={isMobile}
                     onEmbedContextMenu={() => setShowEmbedShortcuts(true)}
                     layerBlurStrengths={state.layerBlurStrengths}
-                    guideColor={state.uiTheme.visualGuides} // Passed new color prop
+                    guideColor={state.uiTheme.visualGuides} 
                     viewLockTrigger={viewLockTrigger}
                 />
             </div>
@@ -968,6 +999,7 @@ export default function App() {
                 isOpen={state.isMenuOpen} 
                 parallaxStrength={state.parallaxStrength}
                 parallaxInverted={state.parallaxInverted}
+                skewStrength={state.skewStrength} // NEW PROP
                 focalLayerIndex={state.focalLayerIndex}
                 springConfig={state.springConfig}
                 backgroundColor={state.canvasBackgroundColor}
@@ -980,9 +1012,9 @@ export default function App() {
                 uiTheme={state.uiTheme}
                 isGridEnabled={state.isGridEnabled}
                 isSnappingEnabled={state.isSnappingEnabled}
-                isParallaxSnappingEnabled={state.isParallaxSnappingEnabled} // NEW PROP
+                isParallaxSnappingEnabled={state.isParallaxSnappingEnabled}
                 gridSize={state.gridSize}
-                gridRoundness={state.gridRoundness} // Pass new prop
+                gridRoundness={state.gridRoundness}
                 symmetryMode={state.symmetryMode}
                 useGyroscope={state.useGyroscope}
                 isLowPowerMode={state.isLowPowerMode}
@@ -997,6 +1029,7 @@ export default function App() {
                 onReset={handleReset}
                 onParallaxStrengthChange={(val) => setState(s => ({ ...s, parallaxStrength: val }))}
                 onParallaxInvertedChange={(val) => setState(s => ({ ...s, parallaxInverted: val }))}
+                onSkewStrengthChange={(val) => setState(s => ({ ...s, skewStrength: val }))} // NEW HANDLER
                 onFocalLayerChange={(idx) => setState(s => ({ ...s, focalLayerIndex: idx }))}
                 onSpringConfigChange={(config) => setState(s => ({ ...s, springConfig: config }))}
                 onBackgroundColorChange={(c) => setState(s => ({ ...s, canvasBackgroundColor: c }))}
@@ -1008,9 +1041,9 @@ export default function App() {
                 onUIThemeChange={(theme) => setState(s => ({ ...s, uiTheme: theme }))}
                 onGridEnabledChange={(val) => setState(s => ({ ...s, isGridEnabled: val }))}
                 onSnappingEnabledChange={(val) => setState(s => ({ ...s, isSnappingEnabled: val }))}
-                onParallaxSnappingEnabledChange={(val) => setState(s => ({ ...s, isParallaxSnappingEnabled: val }))} // NEW HANDLER
+                onParallaxSnappingEnabledChange={(val) => setState(s => ({ ...s, isParallaxSnappingEnabled: val }))}
                 onGridSizeChange={(val) => setState(s => ({ ...s, gridSize: val }))}
-                onGridRoundnessChange={(val) => setState(s => ({ ...s, gridRoundness: val }))} // Pass handler
+                onGridRoundnessChange={(val) => setState(s => ({ ...s, gridRoundness: val }))}
                 onSymmetryModeChange={(val) => setState(s => ({ ...s, symmetryMode: val }))}
                 onUseGyroscopeChange={(val) => setState(s => ({ ...s, useGyroscope: val }))}
                 onLowPowerModeChange={(val) => setState(s => ({ ...s, isLowPowerMode: val }))}

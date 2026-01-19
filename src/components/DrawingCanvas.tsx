@@ -17,6 +17,7 @@ interface DrawingCanvasProps {
   palette: string[];
   parallaxStrength: number;
   parallaxInverted: boolean;
+  skewStrength: number; // NEW PROP
   springConfig: SpringConfig;
   focalLayerIndex: number;
   isPlaying: boolean;
@@ -66,6 +67,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   palette,
   parallaxStrength,
   parallaxInverted,
+  skewStrength, // NEW
   springConfig,
   focalLayerIndex,
   isPlaying,
@@ -207,7 +209,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   }, [dimensions.width]);
 
   const calculateLayerOffset = useCallback((layerIndex: number, currentX: number, currentY: number) => {
-        if (dimensions.width === 0 || dimensions.height === 0) return { x: 0, y: 0 };
+        if (dimensions.width === 0 || dimensions.height === 0) return { x: 0, y: 0, skewX: 0, skewY: 0 };
 
         const direction = parallaxInverted ? -1 : 1;
         const maxLayerDist = 4.0;
@@ -219,14 +221,20 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         let offX = -currentX * maxOffsetX * depthFactor * strengthFactor * direction;
         let offY = -currentY * maxOffsetY * depthFactor * strengthFactor * direction;
         
+        // Calculate Skew
+        // Skewing is based on the perspective shift (currentX/Y) multiplied by depth
+        // If currentX is 1 (far right), background layers (negative depthFactor) skew opposite
+        const skewX = currentX * skewStrength * depthFactor * direction;
+        const skewY = currentY * skewStrength * depthFactor * direction;
+
         // Also snap layer offsets if enabled, for extra precision alignment
         if (isGridEnabled && isParallaxSnappingEnabled) {
             offX = Math.round(offX / gridSize) * gridSize;
             offY = Math.round(offY / gridSize) * gridSize;
         }
 
-        return { x: offX, y: offY };
-  }, [parallaxStrength, parallaxInverted, focalLayerIndex, isGridEnabled, isParallaxSnappingEnabled, gridSize, dimensions]);
+        return { x: offX, y: offY, skewX, skewY };
+  }, [parallaxStrength, parallaxInverted, focalLayerIndex, isGridEnabled, isParallaxSnappingEnabled, gridSize, dimensions, skewStrength]);
 
   const renderGuides = useCallback(() => {
       const canvas = guideCanvasRef.current;
@@ -515,14 +523,15 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const applyParallaxTransforms = (currentX: number, currentY: number) => {
     const layers = containerRef.current?.querySelectorAll('.layer-canvas');
     layers?.forEach((layer, i) => {
-        const { x, y } = calculateLayerOffset(i, currentX, currentY);
-        (layer as HTMLElement).style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+        const { x, y, skewX, skewY } = calculateLayerOffset(i, currentX, currentY);
+        // Apply Translation AND Skew
+        (layer as HTMLElement).style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) skew(${skewX}deg, ${skewY}deg)`;
     });
 
     const guideLayer = containerRef.current?.querySelector('#guide-overlay');
     if (guideLayer) {
-        const { x, y } = calculateLayerOffset(activeLayer, currentX, currentY);
-        (guideLayer as HTMLElement).style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+        const { x, y, skewX, skewY } = calculateLayerOffset(activeLayer, currentX, currentY);
+        (guideLayer as HTMLElement).style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) skew(${skewX}deg, ${skewY}deg)`;
     }
   };
 
@@ -530,7 +539,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     if (dimensions.width > 0 && dimensions.height > 0) {
         applyParallaxTransforms(currentOffset.current.x, currentOffset.current.y);
     }
-  }, [dimensions, focalLayerIndex, parallaxStrength, parallaxInverted, calculateLayerOffset, activeLayer]);
+  }, [dimensions, focalLayerIndex, parallaxStrength, parallaxInverted, calculateLayerOffset, activeLayer, skewStrength]);
 
   useEffect(() => {
       if (exportConfig?.isRecording && !recorderRef.current) {
@@ -907,7 +916,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   useEffect(() => {
     requestRef.current = requestAnimationFrame(animationLoop);
     return () => cancelAnimationFrame(requestRef.current);
-  }, [parallaxStrength, focalLayerIndex, springConfig, parallaxInverted, isLowPowerMode, exportConfig, blurStrength, focusRange, layerBlurStrengths, getScaleFactor, guideColor, isPlaying, calculateLayerOffset]); 
+  }, [parallaxStrength, focalLayerIndex, springConfig, parallaxInverted, isLowPowerMode, exportConfig, blurStrength, focusRange, layerBlurStrengths, getScaleFactor, guideColor, isPlaying, calculateLayerOffset, skewStrength]); 
 
   const getNormalizedLocalPoint = (e: React.MouseEvent | React.TouchEvent | MouseEvent, overrideLayerId?: number) => {
     if (!containerRef.current) return { x: 0, y: 0 };

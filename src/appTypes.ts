@@ -36,7 +36,7 @@ export type BlendMode = 'normal' | 'multiply' | 'overlay' | 'difference';
 export interface Stroke {
   id: string;
   points: Point[];
-  colorSlot: number; // Reference to the palette index (0-4)
+  colorSlot: number; // Reference to the palette index (0-8)
   fillColorSlot?: number; // If undefined, no fill
   size: number;
   tool: ToolType; 
@@ -102,7 +102,7 @@ export interface EmbedStyle {
 // Shortcut System Types
 export type ShortcutAction = 
   | 'UNDO' | 'REDO' | 'PLAY_PAUSE' | 'RESET'
-  | 'COLOR_1' | 'COLOR_2' | 'COLOR_3' | 'COLOR_4' | 'COLOR_5' | 'COLOR_6' | 'COLOR_7'
+  | 'COLOR_1' | 'COLOR_2' | 'COLOR_3' | 'COLOR_4' | 'COLOR_5' | 'COLOR_6' | 'COLOR_7' | 'COLOR_8' | 'COLOR_9'
   | 'PREV_PALETTE' | 'NEXT_PALETTE'
   | 'LAYER_NEXT' | 'LAYER_PREV' // Active Layer
   | 'FOCUS_NEXT' | 'FOCUS_PREV' // Focal Layer
@@ -133,16 +133,17 @@ export interface AppState {
   activeLayer: number; // 0 to 8
   brushSize: number;
   eraserSize: number; // New: Decoupled eraser size
-  activeColorSlot: number; // 0 to 6
-  activeSecondaryColorSlot: number; // 0 to 6 (Fill color)
+  activeColorSlot: number; // 0 to 8
+  activeSecondaryColorSlot: number; // 0 to 8 (Fill color)
   activeBlendMode: BlendMode;
   activeFillBlendMode: BlendMode;
   isFillEnabled: boolean;
   isColorSynced: boolean; // New: If true, fill color follows stroke color
   isStrokeEnabled: boolean; 
-  palette: string[]; // Array of 7 hex codes
+  palette: string[]; // Array of 9 hex codes
   parallaxStrength: number;
-  parallaxInverted: boolean; 
+  parallaxInverted: boolean;
+  skewStrength: number; // New: Skew effect intensity (0-20ish)
   springConfig: SpringConfig;
   focalLayerIndex: number; // The layer that stays still (0-8)
   isPlaying: boolean;

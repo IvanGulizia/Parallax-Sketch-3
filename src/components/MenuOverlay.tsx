@@ -59,6 +59,7 @@ interface MenuOverlayProps {
   isOpen: boolean;
   parallaxStrength: number;
   parallaxInverted: boolean;
+  skewStrength: number; // NEW
   focalLayerIndex: number;
   springConfig: SpringConfig;
   backgroundColor: string;
@@ -88,6 +89,7 @@ interface MenuOverlayProps {
   onReset: () => void;
   onParallaxStrengthChange: (val: number) => void;
   onParallaxInvertedChange: (val: boolean) => void;
+  onSkewStrengthChange: (val: number) => void; // NEW
   onFocalLayerChange: (index: number) => void;
   onSpringConfigChange: (config: SpringConfig) => void;
   onBackgroundColorChange: (color: string) => void;
@@ -115,6 +117,7 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
     isOpen, 
     parallaxStrength,
     parallaxInverted,
+    skewStrength,
     focalLayerIndex,
     springConfig,
     backgroundColor,
@@ -144,6 +147,7 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
     onReset,
     onParallaxStrengthChange,
     onParallaxInvertedChange,
+    onSkewStrengthChange,
     onFocalLayerChange,
     onSpringConfigChange,
     onBackgroundColorChange,
@@ -590,6 +594,19 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
                                 min={0} max={100} step={1}
                                 value={parallaxStrength} 
                                 onChange={onParallaxStrengthChange}
+                            />
+                        </div>
+                     </div>
+                </ControlRow>
+
+                <ControlRow label="Parallax Skew">
+                     <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-medium w-8 text-right" style={{ color: 'var(--slider-value-color)' }}>{skewStrength}</span>
+                        <div className="w-24">
+                            <Slider 
+                                min={-20} max={20} step={1}
+                                value={skewStrength} 
+                                onChange={onSkewStrengthChange}
                             />
                         </div>
                      </div>
