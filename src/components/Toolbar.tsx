@@ -108,7 +108,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
       : 'bg-[var(--tool-bg)] text-[var(--icon-color)] border-[var(--button-border)] hover:bg-[var(--secondary-bg)]'}
   `;
 
-  // Increased width to auto/max-500px to fit 9 colors comfortably
+  // Adjusted width constraints to fit content
   const popupClass = "absolute top-full mt-4 left-1/2 -translate-x-1/2 backdrop-blur-md bg-white/95 flex gap-3 z-50 animate-in fade-in slide-in-from-top-2 duration-200 items-center justify-center border border-gray-200 shadow-lg";
 
   return (
@@ -143,7 +143,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             </button>
             
             {showColorPicker && (
-                <div className={`${popupClass} rounded-3xl p-4 flex-col gap-3 w-auto max-w-[500px]`}>
+                <div className={`${popupClass} rounded-3xl p-4 flex-col gap-3 w-max max-w-[95vw]`}>
                     
                     {/* Tabs */}
                     <div className="flex bg-gray-100 rounded-full p-1 w-full mb-1">
@@ -193,10 +193,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                             </div>
                         )}
 
-                        {/* Palette */}
+                        {/* Palette - Single Line Fixed */}
                         {((!isEditingFill) || (isEditingFill && isFillEnabled)) && (
                             <>
-                                <div className={`flex gap-2 justify-center flex-wrap items-center transition-opacity duration-200 ${isEditingFill && isColorSynced ? 'opacity-50 pointer-events-none grayscale' : 'opacity-100'}`} style={{ minWidth: '320px' }}>
+                                {/* Changed flex-wrap to flex-nowrap and removed tight minWidth to allow natural expansion */}
+                                <div className={`flex gap-2 justify-center flex-nowrap items-center transition-opacity duration-200 ${isEditingFill && isColorSynced ? 'opacity-50 pointer-events-none grayscale' : 'opacity-100'}`}>
                                     
                                     {palette.map((color, index) => {
                                         const isActive = isEditingFill 
@@ -204,7 +205,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                                             : activeColorSlot === index;
                                         
                                         return (
-                                            <div key={index} className="relative group">
+                                            <div key={index} className="relative group shrink-0">
                                                 <button
                                                     onClick={() => {
                                                         onColorSlotChange(index, isEditingFill);
@@ -230,10 +231,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                                         )
                                     })}
                                     
-                                    {/* Palette Next (Shuffle) */}
+                                    {/* Palette Next (Shuffle) - Moved inline */}
+                                    <div className="w-px h-6 bg-gray-200 mx-1 shrink-0" /> {/* Little separator */}
                                     <button
                                         onClick={() => onCyclePalette(1)}
-                                        className="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-black transition-colors ml-1"
+                                        className="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-black transition-colors shrink-0"
                                         title="Next Palette"
                                     >
                                         <Icons.Shuffle size={14} />
@@ -268,7 +270,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                 </div>
             </button>
              {showSizePicker && activeTool === ToolType.BRUSH && (
-                <div className={`${popupClass} rounded-full p-3 px-4 flex-row items-center gap-3`}>
+                <div className={`${popupClass} rounded-full p-3 px-4 flex-row items-center gap-3 w-auto`}>
                     {[2, 6, 12, 24, 40].map((size) => (
                         <button
                             key={size}
@@ -305,7 +307,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             </button>
 
              {showEraserPicker && activeTool === ToolType.ERASER && (
-                <div className={`${popupClass} rounded-full p-2 px-4 flex-row gap-4`}>
+                <div className={`${popupClass} rounded-full p-2 px-4 flex-row gap-4 w-auto`}>
                     <div className="flex items-center gap-3">
                         {[10, 30, 50].map(size => (
                             <button
