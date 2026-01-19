@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Icons } from './Icons';
-import { ShortcutConfig, ShortcutAction, KeyBinding, UITheme } from '../types';
+import { ShortcutConfig, ShortcutAction, KeyBinding, UITheme } from '../appTypes';
 
 interface DebugOverlayProps {
   onClose: () => void;

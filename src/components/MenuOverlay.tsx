@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Icons } from './Icons';
-import { SpringConfig, UITheme, BlendMode, ExportConfig, TrajectoryType, ExportFormat, SymmetryMode, MAX_LAYER_INDEX } from '../types';
+import { SpringConfig, UITheme, BlendMode, ExportConfig, TrajectoryType, ExportFormat, SymmetryMode, MAX_LAYER_INDEX } from '../appTypes';
 import { Slider } from './Slider';
 // @ts-ignore
 import LZString from 'lz-string';
@@ -71,8 +71,9 @@ interface MenuOverlayProps {
   uiTheme: UITheme;
   isGridEnabled: boolean;
   isSnappingEnabled: boolean;
+  isParallaxSnappingEnabled: boolean; // New Prop
   gridSize: number;
-  gridRoundness: number; // New Prop
+  gridRoundness: number; 
   symmetryMode: SymmetryMode;
   useGyroscope: boolean;
   isLowPowerMode: boolean;
@@ -98,8 +99,9 @@ interface MenuOverlayProps {
   onUIThemeChange: (theme: UITheme) => void;
   onGridEnabledChange: (val: boolean) => void;
   onSnappingEnabledChange: (val: boolean) => void;
+  onParallaxSnappingEnabledChange: (val: boolean) => void; // New Handler
   onGridSizeChange: (val: number) => void;
-  onGridRoundnessChange: (val: number) => void; // New Handler
+  onGridRoundnessChange: (val: number) => void;
   onSymmetryModeChange: (val: SymmetryMode) => void;
   onUseGyroscopeChange: (val: boolean) => void;
   onLowPowerModeChange: (val: boolean) => void;
@@ -125,6 +127,7 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
     uiTheme,
     isGridEnabled,
     isSnappingEnabled,
+    isParallaxSnappingEnabled,
     gridSize,
     gridRoundness,
     symmetryMode,
@@ -152,6 +155,7 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
     onUIThemeChange,
     onGridEnabledChange,
     onSnappingEnabledChange,
+    onParallaxSnappingEnabledChange,
     onGridSizeChange,
     onGridRoundnessChange,
     onSymmetryModeChange,
@@ -516,13 +520,22 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
                  
                  {isGridEnabled && (
                      <div className="pt-2 space-y-3 animate-in fade-in">
-                         <ControlRow label="Snap to Grid">
+                         <ControlRow label="Snap Drawing">
                             <ToggleBtn 
                                 checked={isSnappingEnabled} 
                                 onChange={() => onSnappingEnabledChange(!isSnappingEnabled)} 
                                 label={isSnappingEnabled ? 'Active' : 'Disabled'}
                             />
                          </ControlRow>
+
+                         <ControlRow label="Snap Parallax">
+                            <ToggleBtn 
+                                checked={isParallaxSnappingEnabled} 
+                                onChange={() => onParallaxSnappingEnabledChange(!isParallaxSnappingEnabled)} 
+                                label={isParallaxSnappingEnabled ? 'Active' : 'Disabled'}
+                            />
+                         </ControlRow>
+
                          <ControlRow label={`Size (${gridSize}px)`}>
                             <div className="w-32">
                                 <Slider 

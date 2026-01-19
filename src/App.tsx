@@ -4,7 +4,7 @@ import { Toolbar } from './components/Toolbar';
 import { LayerSlider } from './components/LayerSlider';
 import { DrawingCanvas } from './components/DrawingCanvas';
 import { MenuOverlay } from './components/MenuOverlay';
-import { ToolType, AppState, Stroke, EraserMode, BlendMode, TrajectoryType, SymmetryMode, ShortcutConfig, ShortcutAction, KeyBinding, UITheme, MAX_LAYER_INDEX, MIN_LAYER_INDEX, DEFAULT_LAYER_INDEX, LAYER_COUNT } from './types';
+import { ToolType, AppState, Stroke, EraserMode, BlendMode, TrajectoryType, SymmetryMode, ShortcutConfig, ShortcutAction, KeyBinding, UITheme, MAX_LAYER_INDEX, MIN_LAYER_INDEX, DEFAULT_LAYER_INDEX, LAYER_COUNT } from './appTypes';
 import { v4 as uuidv4 } from 'uuid';
 // @ts-ignore
 import LZString from 'lz-string';
@@ -404,7 +404,13 @@ export default function App() {
               
               // Ensure canvasBackgroundColor is loaded correctly from either key
               canvasBackgroundColor: isTransparent ? 'transparent' : (data.config.canvasBackgroundColor || data.config.backgroundColor || s.canvasBackgroundColor),
-              palette: data.palette || s.palette 
+              palette: data.palette || s.palette,
+              
+              // Load grid settings
+              isGridEnabled: data.config.isGridEnabled ?? s.isGridEnabled,
+              isSnappingEnabled: data.config.isSnappingEnabled ?? s.isSnappingEnabled,
+              isParallaxSnappingEnabled: data.config.isParallaxSnappingEnabled ?? s.isParallaxSnappingEnabled,
+              gridSize: data.config.gridSize ?? s.gridSize
           }));
       }
   };
@@ -440,7 +446,12 @@ export default function App() {
             blurStrength: state.blurStrength,
             focusRange: state.focusRange,
             symmetryMode: state.symmetryMode,
-            gridRoundness: state.gridRoundness
+            gridRoundness: state.gridRoundness,
+            // Added Grid/Snap state to encoded string
+            isGridEnabled: state.isGridEnabled,
+            isSnappingEnabled: state.isSnappingEnabled,
+            isParallaxSnappingEnabled: state.isParallaxSnappingEnabled,
+            gridSize: state.gridSize
         }
     });
     const blob = new Blob([data], { type: 'application/json' });
@@ -759,7 +770,12 @@ export default function App() {
             blurStrength: state.blurStrength,
             focusRange: state.focusRange,
             symmetryMode: state.symmetryMode,
-            gridRoundness: state.gridRoundness
+            gridRoundness: state.gridRoundness,
+            // Added Grid/Snap state to encoded string
+            isGridEnabled: state.isGridEnabled,
+            isSnappingEnabled: state.isSnappingEnabled,
+            isParallaxSnappingEnabled: state.isParallaxSnappingEnabled,
+            gridSize: state.gridSize
         }
     }); 
   }, [currentStrokes, state]);
@@ -971,6 +987,7 @@ export default function App() {
                 uiTheme={state.uiTheme}
                 isGridEnabled={state.isGridEnabled}
                 isSnappingEnabled={state.isSnappingEnabled}
+                isParallaxSnappingEnabled={state.isParallaxSnappingEnabled} // NEW PROP
                 gridSize={state.gridSize}
                 gridRoundness={state.gridRoundness} // Pass new prop
                 symmetryMode={state.symmetryMode}
@@ -998,6 +1015,7 @@ export default function App() {
                 onUIThemeChange={(theme) => setState(s => ({ ...s, uiTheme: theme }))}
                 onGridEnabledChange={(val) => setState(s => ({ ...s, isGridEnabled: val }))}
                 onSnappingEnabledChange={(val) => setState(s => ({ ...s, isSnappingEnabled: val }))}
+                onParallaxSnappingEnabledChange={(val) => setState(s => ({ ...s, isParallaxSnappingEnabled: val }))} // NEW HANDLER
                 onGridSizeChange={(val) => setState(s => ({ ...s, gridSize: val }))}
                 onGridRoundnessChange={(val) => setState(s => ({ ...s, gridRoundness: val }))} // Pass handler
                 onSymmetryModeChange={(val) => setState(s => ({ ...s, symmetryMode: val }))}

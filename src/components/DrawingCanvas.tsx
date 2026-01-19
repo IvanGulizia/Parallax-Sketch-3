@@ -1,6 +1,6 @@
 
 import React, { useRef, useEffect, useState, useCallback, useLayoutEffect } from 'react';
-import { ToolType, Point, Stroke, EraserMode, SpringConfig, BlendMode, ExportConfig, TrajectoryType, SymmetryMode } from '../types';
+import { ToolType, Point, Stroke, EraserMode, SpringConfig, BlendMode, ExportConfig, TrajectoryType, SymmetryMode } from '../appTypes';
 import { v4 as uuidv4 } from 'uuid';
 import { Icons } from './Icons';
 
@@ -29,7 +29,7 @@ interface DrawingCanvasProps {
   isSnappingEnabled: boolean;
   isParallaxSnappingEnabled: boolean;
   gridSize: number;
-  gridRoundness: number; // New Prop
+  gridRoundness: number; 
   symmetryMode: SymmetryMode;
   useGyroscope: boolean;
   isLowPowerMode: boolean;
@@ -78,7 +78,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   isSnappingEnabled,
   isParallaxSnappingEnabled,
   gridSize,
-  gridRoundness, // New prop
+  gridRoundness,
   symmetryMode,
   useGyroscope,
   isLowPowerMode,
@@ -116,7 +116,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   // View Lock State
   const isViewLocked = useRef(false);
   const lockedOffset = useRef({ x: 0, y: 0 });
-  const [isLockedUI, setIsLockedUI] = useState(false); // Local state for UI feedback
+  const [isLockedUI, setIsLockedUI] = useState(false); 
 
   // Interaction
   const isDrawing = useRef(false);
@@ -152,7 +152,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  // --- View Locking Effect (Revised) ---
   useEffect(() => {
       if (!viewLockTrigger || viewLockTrigger.ts === 0) return;
 
@@ -163,26 +162,22 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
              let finalX = currentOffset.current.x;
              let finalY = currentOffset.current.y;
 
-             // Grid Snapping Logic for Lock
+             // Grid Snapping Logic for Lock: Force snap to nearest grid point
              if (isGridEnabled && dimensions.width > 0 && dimensions.height > 0) {
-                 // Convert normalized offset (-1 to 1) to approximate pixel offset from center
                  const halfW = dimensions.width / 2;
                  const halfH = dimensions.height / 2;
-                 
                  const pxX = finalX * halfW;
                  const pxY = finalY * halfH;
-
-                 // Snap to nearest grid multiple
                  const snappedPxX = Math.round(pxX / gridSize) * gridSize;
                  const snappedPxY = Math.round(pxY / gridSize) * gridSize;
-
-                 // Convert back to normalized
                  finalX = snappedPxX / halfW;
                  finalY = snappedPxY / halfH;
              }
 
              lockedOffset.current = { x: finalX, y: finalY };
-             targetOffset.current = { x: finalX, y: finalY }; // Force target immediately to snapped pos
+             targetOffset.current = { x: finalX, y: finalY };
+             // Instant snap to avoid spring drift when locking
+             currentOffset.current = { x: finalX, y: finalY };
              setIsLockedUI(true);
            }
       } else if (viewLockTrigger.type === 'RESET') {
@@ -211,30 +206,20 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       return Math.max(0.1, dimensions.width / 1000);
   }, [dimensions.width]);
 
-  // --- Helper: Calculate Layer Offset (Calibrated 1:1) ---
   const calculateLayerOffset = useCallback((layerIndex: number, currentX: number, currentY: number) => {
         if (dimensions.width === 0 || dimensions.height === 0) return { x: 0, y: 0 };
 
         const direction = parallaxInverted ? -1 : 1;
-        
-        // --- CALIBRATION LOGIC ---
-        // 1. Determine relative depth normalized to the stack size (4 layers from center to front)
-        // This ensures the "Front" layer (dist 4) has a depthFactor of 1.0
         const maxLayerDist = 4.0;
         const depthFactor = (layerIndex - focalLayerIndex) / maxLayerDist;
-
-        // 2. Strength Factor: We want 50% strength to equal a 1.0 multiplier
         const strengthFactor = parallaxStrength / 50.0;
-
-        // 3. Base Pixel Offset: 1:1 mapping means moving from center to edge moves the layer by half screen width
         const maxOffsetX = dimensions.width / 2;
         const maxOffsetY = dimensions.height / 2;
         
-        // 4. Calculate final offset
         let offX = -currentX * maxOffsetX * depthFactor * strengthFactor * direction;
         let offY = -currentY * maxOffsetY * depthFactor * strengthFactor * direction;
-
-        // Apply Parallax Movement Snapping Logic
+        
+        // Also snap layer offsets if enabled, for extra precision alignment
         if (isGridEnabled && isParallaxSnappingEnabled) {
             offX = Math.round(offX / gridSize) * gridSize;
             offY = Math.round(offY / gridSize) * gridSize;
@@ -243,7 +228,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         return { x: offX, y: offY };
   }, [parallaxStrength, parallaxInverted, focalLayerIndex, isGridEnabled, isParallaxSnappingEnabled, gridSize, dimensions]);
 
-  // --- Rendering Guides (Grid / Symmetry) ---
   const renderGuides = useCallback(() => {
       const canvas = guideCanvasRef.current;
       if (!canvas || dimensions.width === 0 || dimensions.height === 0) return;
@@ -261,7 +245,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // --- Grid Rendering (CENTERED) ---
       if (isGridEnabled && !isPlaying && !exportConfig?.isActive) {
           ctx.save();
           ctx.fillStyle = guideColor;
@@ -283,7 +266,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           ctx.restore();
       }
 
-      // --- Symmetry Guides Rendering (CENTERED) ---
       if (symmetryMode !== SymmetryMode.NONE && !isEmbedMode && !exportConfig?.isActive && !isPlaying) {
           ctx.save();
           ctx.beginPath();
@@ -310,7 +292,42 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   }, [dimensions, isGridEnabled, gridSize, guideColor, isPlaying, exportConfig, symmetryMode, isEmbedMode]);
 
 
-  // --- Rendering Layers ---
+  // Helper: Simplify points to remove collinear points (essential for clean corners)
+  const simplifyPoints = (points: Point[]): Point[] => {
+      if (points.length < 3) return points;
+      const simplified = [points[0]];
+      
+      for (let i = 1; i < points.length - 1; i++) {
+          const prev = simplified[simplified.length - 1];
+          const curr = points[i];
+          const next = points[i+1];
+          
+          // Vectors
+          const v1 = { x: curr.x - prev.x, y: curr.y - prev.y };
+          const v2 = { x: next.x - curr.x, y: next.y - curr.y };
+          
+          // Normalize
+          const len1 = Math.sqrt(v1.x*v1.x + v1.y*v1.y);
+          const len2 = Math.sqrt(v2.x*v2.x + v2.y*v2.y);
+          
+          if (len1 === 0 || len2 === 0) continue; // Skip identical points
+          
+          const nx1 = v1.x / len1; const ny1 = v1.y / len1;
+          const nx2 = v2.x / len2; const ny2 = v2.y / len2;
+          
+          // Dot product checks for collinearity (parallel vectors)
+          const dot = nx1 * nx2 + ny1 * ny2;
+          
+          // Threshold 0.98 (~11 degrees) filters noise but keeps intentional shallow angles
+          if (dot < 0.98) {
+              simplified.push(curr);
+          }
+      }
+      
+      simplified.push(points[points.length - 1]);
+      return simplified;
+  };
+
   const renderLayer = useCallback((layerIndex: number) => {
     const canvas = offscreenCanvases.current[layerIndex];
     if (!canvas || dimensions.width === 0 || dimensions.height === 0) return;
@@ -328,70 +345,115 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     if (!ctx) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // NOTE: Grid and Symmetry are now rendered in renderGuides on a separate canvas
 
     const layerStrokes = strokes.filter(s => s.layerId === layerIndex);
 
     layerStrokes.forEach(stroke => {
         if (stroke.points.length < 2) return;
 
-        const start = denormalizePoint(stroke.points[0], dimensions.width, dimensions.height);
+        // 1. Transform points to canvas space
+        const rawPoints = stroke.points.map(p => denormalizePoint(p, dimensions.width, dimensions.height));
         
-        // --- Helper Function for Drawing Path ---
-        // This abstracts the drawing logic for both Stroke and Fill
+        // 2. Simplify path (Merge collinear points to find true corners)
+        let cleanPoints = simplifyPoints(rawPoints);
+        
+        // Check closed (geometric tolerance)
+        const isClosed = cleanPoints.length > 2 && 
+                         Math.hypot(cleanPoints[0].x - cleanPoints[cleanPoints.length-1].x, 
+                                    cleanPoints[0].y - cleanPoints[cleanPoints.length-1].y) < 1;
+
+        if (isClosed) {
+             // Remove duplicate end point for processing
+             cleanPoints.pop();
+        }
+
         const drawPath = (context: CanvasRenderingContext2D) => {
             context.beginPath();
-            context.moveTo(start.x, start.y);
 
-            if (stroke.roundness && stroke.roundness > 0) {
-                // ROUNDED CORNER LOGIC
-                // We map 0-100 roundness to a 0.0 - 0.5 ratio
-                // 0.5 means the curve starts at the midpoint of the segment
-                const ratio = (stroke.roundness / 100) * 0.5;
+            const roundness = stroke.roundness || 0;
 
-                for (let i = 1; i < stroke.points.length - 1; i++) {
-                    const pPrev = denormalizePoint(stroke.points[i - 1], dimensions.width, dimensions.height);
-                    const pCurr = denormalizePoint(stroke.points[i], dimensions.width, dimensions.height);
-                    const pNext = denormalizePoint(stroke.points[i + 1], dimensions.width, dimensions.height);
+            if (roundness > 0 && cleanPoints.length >= 3) {
+                 // --- PERFECT CORNER ROUNDING LOGIC ---
+                 
+                 // Determine tangent limiting factor:
+                 // - Closed shapes (Square->Circle) need 0.5 to meet at midpoints.
+                 // - Simple Angles (3 points, L-Shape) allow 1.0 to maximize arc (Quarter Circle).
+                 // - Complex Polylines (>3 points) need 0.5 to avoid segment overlaps.
+                 const tangentFactor = (isClosed) ? 0.5 : (cleanPoints.length === 3 ? 1.0 : 0.5);
 
-                    // Vectors
-                    const vIn = { x: pCurr.x - pPrev.x, y: pCurr.y - pPrev.y };
-                    const vOut = { x: pNext.x - pCurr.x, y: pNext.y - pCurr.y };
+                 const pointsToRender = isClosed ? [...cleanPoints, cleanPoints[0], cleanPoints[1]] : cleanPoints;
+                 const count = pointsToRender.length;
+                 // Fix: Start at index 1 for closed to ensure prev/next exist in padded array
+                 const startIndex = 1; 
+                 // Fix: End index adjusted for padding
+                 const endIndex = isClosed ? count - 1 : count - 1; 
 
-                    // Lengths
-                    const lenIn = Math.sqrt(vIn.x * vIn.x + vIn.y * vIn.y);
-                    const lenOut = Math.sqrt(vOut.x * vOut.x + vOut.y * vOut.y);
+                 if (isClosed) {
+                     // For closed shapes, start drawing at midpoint of the first segment
+                     const p0 = cleanPoints[0];
+                     const p1 = cleanPoints[1];
+                     const midX = (p0.x + p1.x) / 2;
+                     const midY = (p0.y + p1.y) / 2;
+                     context.moveTo(midX, midY);
+                 } else {
+                     context.moveTo(cleanPoints[0].x, cleanPoints[0].y);
+                 }
 
-                    // Determine curve start/end points
-                    // We use the simpler scalar interpolation approach since we are on a grid mostly
-                    // Start point is 'ratio' distance back from Current along Previous-Current line
-                    const startX = pCurr.x - (vIn.x / lenIn) * (lenIn * ratio);
-                    const startY = pCurr.y - (vIn.y / lenIn) * (lenIn * ratio);
+                 for (let i = startIndex; i < endIndex; i++) {
+                     const curr = pointsToRender[i];
+                     const prev = pointsToRender[i-1];
+                     const next = pointsToRender[i+1];
+                     
+                     // Vectors
+                     const v1x = curr.x - prev.x;
+                     const v1y = curr.y - prev.y;
+                     const v2x = next.x - curr.x;
+                     const v2y = next.y - curr.y;
+                     
+                     const len1 = Math.hypot(v1x, v1y);
+                     const len2 = Math.hypot(v2x, v2y);
+                     
+                     if (len1 < 0.1 || len2 < 0.1) {
+                         context.lineTo(curr.x, curr.y);
+                         continue;
+                     }
 
-                    // End point is 'ratio' distance forward from Current along Current-Next line
-                    const endX = pCurr.x + (vOut.x / lenOut) * (lenOut * ratio);
-                    const endY = pCurr.y + (vOut.y / lenOut) * (lenOut * ratio);
+                     // Angle between vectors
+                     const dot = (v1x * v2x + v1y * v2y);
+                     const invV1x = -v1x;
+                     const invV1y = -v1y;
+                     const dotInner = (invV1x * v2x + invV1y * v2y);
+                     const angleRad = Math.acos(Math.max(-1, Math.min(1, dotInner / (len1 * len2))));
+                     
+                     // Max Tangent Length depends on the factor derived above
+                     const maxTangent = Math.min(len1, len2) * tangentFactor;
+                     const currentTangent = maxTangent * (roundness / 100);
+                     
+                     // R = T * tan(angle / 2)
+                     const safeAngle = Math.max(0.1, Math.min(Math.PI - 0.1, angleRad));
+                     const radius = currentTangent * Math.tan(safeAngle / 2);
 
-                    context.lineTo(startX, startY);
-                    context.quadraticCurveTo(pCurr.x, pCurr.y, endX, endY);
-                }
-                // Connect to final point
-                const last = denormalizePoint(stroke.points[stroke.points.length - 1], dimensions.width, dimensions.height);
-                context.lineTo(last.x, last.y);
+                     context.arcTo(curr.x, curr.y, next.x, next.y, radius);
+                 }
+
+                 if (isClosed) {
+                     context.closePath();
+                 } else {
+                     context.lineTo(cleanPoints[cleanPoints.length-1].x, cleanPoints[cleanPoints.length-1].y);
+                 }
 
             } else {
-                // STANDARD SHARP CORNERS
-                for (let i = 1; i < stroke.points.length; i++) {
-                    const p = denormalizePoint(stroke.points[i], dimensions.width, dimensions.height);
-                    context.lineTo(p.x, p.y);
+                // No rounding or too few points
+                context.moveTo(cleanPoints[0].x, cleanPoints[0].y);
+                for (let i = 1; i < cleanPoints.length; i++) {
+                    context.lineTo(cleanPoints[i].x, cleanPoints[i].y);
                 }
+                if (isClosed) context.closePath();
             }
         };
 
         if (stroke.fillColorSlot !== undefined && stroke.fillColorSlot !== -1) {
              drawPath(ctx);
-             ctx.closePath(); 
              ctx.fillStyle = palette[stroke.fillColorSlot] || 'transparent';
              
              let compositeOp: GlobalCompositeOperation = 'source-over';
@@ -446,22 +508,17 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   }, [strokes, selectedStrokeId, dimensions, palette, isLowPowerMode, symmetryMode, activeLayer, isEmbedMode, exportConfig, isPlaying, getScaleFactor, guideColor, isGridEnabled, gridSize]);
 
   useEffect(() => {
-    // Render loop for 9 layers
     [0, 1, 2, 3, 4, 5, 6, 7, 8].forEach(renderLayer);
-    
-    // Render guides
     renderGuides();
   }, [strokes, renderLayer, renderGuides, selectedStrokeId, dimensions, palette, symmetryMode, guideColor, isGridEnabled]);
 
   const applyParallaxTransforms = (currentX: number, currentY: number) => {
-    // Apply transform to layer canvases
     const layers = containerRef.current?.querySelectorAll('.layer-canvas');
     layers?.forEach((layer, i) => {
         const { x, y } = calculateLayerOffset(i, currentX, currentY);
         (layer as HTMLElement).style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
     });
 
-    // Apply active layer transform to guide canvas
     const guideLayer = containerRef.current?.querySelector('#guide-overlay');
     if (guideLayer) {
         const { x, y } = calculateLayerOffset(activeLayer, currentX, currentY);
@@ -544,28 +601,39 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         if (!isDrawing.current && !exportConfig?.isActive && !useGyroscope && !isViewLocked.current && isPlaying) {
             const { width, height, left, top } = containerRef.current.getBoundingClientRect();
             
-            // Raw mouse position from top-left
             let mouseX = e.clientX - left;
             let mouseY = e.clientY - top;
 
-            // Default normalized coordinates (used if snapping is off)
-            let x = (mouseX / width) * 2 - 1;
-            let y = (mouseY / height) * 2 - 1;
-
-            // SNAP LOGIC FOR PLAY MODE
-            if (isGridEnabled && isSnappingEnabled) {
+            // Optional Parallax Snapping logic (Jerky cursor effect)
+            if (isGridEnabled && isParallaxSnappingEnabled) {
                  const centerX = width / 2;
                  const centerY = height / 2;
                  
-                 // Pixel distance from center
                  let pxFromCenterX = mouseX - centerX;
                  let pxFromCenterY = mouseY - centerY;
                  
-                 // Snap to grid
                  pxFromCenterX = Math.round(pxFromCenterX / gridSize) * gridSize;
                  pxFromCenterY = Math.round(pxFromCenterY / gridSize) * gridSize;
                  
-                 // Recalculate normalized coords (relative to center, range -1 to 1)
+                 // Recalculate mouse position based on snap
+                 mouseX = centerX + pxFromCenterX;
+                 mouseY = centerY + pxFromCenterY;
+            }
+
+            let x = (mouseX / width) * 2 - 1;
+            let y = (mouseY / height) * 2 - 1;
+
+            if (isGridEnabled && isSnappingEnabled && !isPlaying) {
+                 // Drawing Snapping Logic (Existing)
+                 const centerX = width / 2;
+                 const centerY = height / 2;
+                 
+                 let pxFromCenterX = mouseX - centerX;
+                 let pxFromCenterY = mouseY - centerY;
+                 
+                 pxFromCenterX = Math.round(pxFromCenterX / gridSize) * gridSize;
+                 pxFromCenterY = Math.round(pxFromCenterY / gridSize) * gridSize;
+                 
                  x = pxFromCenterX / centerX; 
                  y = pxFromCenterY / centerY;
             }
@@ -591,7 +659,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 blendMode: activeBlendMode,
                 fillBlendMode: activeFillBlendMode,
                 isStrokeEnabled: isStrokeEnabled,
-                roundness: isGridEnabled ? gridRoundness : 0 // Apply grid roundness
+                roundness: isGridEnabled ? gridRoundness : 0 
             };
 
             const allNewStrokes = generateSymmetryStrokes(baseStroke);
@@ -616,7 +684,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 blendMode: activeBlendMode,
                 fillBlendMode: activeFillBlendMode,
                 isStrokeEnabled: isStrokeEnabled,
-                roundness: isGridEnabled ? gridRoundness : 0 // Apply grid roundness
+                roundness: isGridEnabled ? gridRoundness : 0 
             };
             
             const allNewStrokes = generateSymmetryStrokes(baseStroke);
@@ -678,7 +746,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         window.removeEventListener('mouseup', handleWindowMouseUp);
         window.removeEventListener('deviceorientation', handleOrientation);
     }
-  }, [isPlaying, useGyroscope, isLowPowerMode, parallaxStrength, focalLayerIndex, parallaxInverted, exportConfig, strokes, activeTool, activeLayer, brushSize, isFillEnabled, activeColorSlot, activeSecondaryColorSlot, activeBlendMode, activeFillBlendMode, isStrokeEnabled, isGridEnabled, isSnappingEnabled, gridSize, gridRoundness]);
+  }, [isPlaying, useGyroscope, isLowPowerMode, parallaxStrength, focalLayerIndex, parallaxInverted, exportConfig, strokes, activeTool, activeLayer, brushSize, isFillEnabled, activeColorSlot, activeSecondaryColorSlot, activeBlendMode, activeFillBlendMode, isStrokeEnabled, isGridEnabled, isSnappingEnabled, gridSize, gridRoundness, isParallaxSnappingEnabled]);
 
   const animationLoop = () => {
     let nextX = currentOffset.current.x;
@@ -776,13 +844,10 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         }
     }
 
-    // Performance Optimization: Check for idling
-    // If we are not playing, not locked, not exporting, and the movement is negligible, skip DOM updates
     const dx = nextX - currentOffset.current.x;
     const dy = nextY - currentOffset.current.y;
     const isMoving = Math.abs(dx) > 0.00001 || Math.abs(dy) > 0.00001;
     
-    // Always update if exporting. For play/lock, only update if actually moving.
     const shouldUpdate = exportConfig?.isActive || isMoving;
 
     if (shouldUpdate) {
@@ -797,7 +862,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             ctx.fillStyle = backgroundColor;
             ctx.fillRect(0, 0, dimensions.width, dimensions.height);
 
-            // Recording loop for 9 layers
             [0, 1, 2, 3, 4, 5, 6, 7, 8].forEach(index => {
                 const source = offscreenCanvases.current[index];
                 if (!source) return;
@@ -909,7 +973,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
 
       if (exportConfig?.isActive) return;
 
-      // Hit test loop for 9 layers (Top to Bottom: 8 -> 0)
       for (const layerId of [8, 7, 6, 5, 4, 3, 2, 1, 0]) {
           const pt = getNormalizedLocalPoint(e, layerId);
           const hitStroke = hitTest(pt, layerId);
@@ -1030,7 +1093,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
                 backgroundColor: backgroundColor 
             }}
         >
-        {/* Render 9 layers */}
         {[0, 1, 2, 3, 4, 5, 6, 7, 8].map(layerIndex => {
             let effectiveBlur = 0;
             const manualBlur = (layerBlurStrengths && layerBlurStrengths[layerIndex]) || 0;
@@ -1067,11 +1129,10 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             );
         })}
 
-        {/* GUIDE OVERLAY (Grid / Symmetry) - Unblurred, transforms with active layer */}
         <div 
             id="guide-overlay"
             className="absolute left-1/2 top-1/2 w-full h-full pointer-events-none will-change-transform"
-            style={{ zIndex: 100 }}
+            style={{ zIndex: 30 }}
         >
             <canvas 
                 ref={guideCanvasRef}
@@ -1079,20 +1140,19 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             />
         </div>
 
-        {/* Visual Indicators for View Lock */}
         {isLockedUI && (
             <>
-             <div className="absolute top-4 right-4 pointer-events-none opacity-60" style={{ color: '#d5cdb4' }}>
+             <div className="absolute top-4 right-4 pointer-events-none opacity-60" style={{ color: '#d5cdb4', zIndex: 35 }}>
                  <Icons.Lock size={24} />
              </div>
-             {/* Origin Dot Indicator */}
              <div 
                 className="absolute w-2 h-2 rounded-full pointer-events-none transform -translate-x-1/2 -translate-y-1/2"
                 style={{ 
                     backgroundColor: '#d5cdb4', 
                     opacity: 0.6,
                     left: `${((lockedOffset.current.x + 1) / 2) * 100}%`,
-                    top: `${((lockedOffset.current.y + 1) / 2) * 100}%`
+                    top: `${((lockedOffset.current.y + 1) / 2) * 100}%`,
+                    zIndex: 35
                 }}
              />
             </>

@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Icons } from './Icons';
-import { ToolType, EraserMode, BlendMode } from '../types';
+import { ToolType, EraserMode, BlendMode } from '../appTypes';
 
 interface ToolbarProps {
   activeTool: ToolType;
@@ -337,9 +338,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({
         {/* Separator */}
         <div className="w-px h-8 bg-[var(--border-color)] mx-1" />
 
-        {/* Reset Canvas - Swapped with Menu */}
+        {/* Reset Canvas */}
         <button 
-          className={`${btnClass(false)} border-pink-200 bg-pink-50 hover:bg-pink-100 text-pink-500`}
+          className={`${btnClass(false)} border-pink-200 bg-pink-50 hover:bg-pink-100 text-pink-500 ml-1`}
           onClick={onReset}
           title="Reset Canvas"
         >
@@ -364,7 +365,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             </button>
         </div>
 
-        {/* Menu - Swapped with Reset */}
+        {/* Menu */}
         <button 
           className={`${btnClass(false)} ml-1 menu-toggle-btn`}
           onClick={onMenuToggle}
