@@ -4,6 +4,7 @@ import { Toolbar } from './components/Toolbar';
 import { LayerSlider } from './components/LayerSlider';
 import { DrawingCanvas } from './components/DrawingCanvas';
 import { MenuOverlay } from './components/MenuOverlay';
+import { FilenameDialog } from './components/FilenameDialog';
 import { ToolType, AppState, Stroke, EraserMode, BlendMode, TrajectoryType, SymmetryMode, ShortcutConfig, ShortcutAction, KeyBinding, UITheme, MAX_LAYER_INDEX, MIN_LAYER_INDEX, DEFAULT_LAYER_INDEX, LAYER_COUNT } from './appTypes';
 import { v4 as uuidv4 } from 'uuid';
 // @ts-ignore
@@ -286,6 +287,7 @@ export default function App() {
   const [currentStrokes, setCurrentStrokes] = useState<Stroke[]>([]);
   const [showEmbedShortcuts, setShowEmbedShortcuts] = useState(false);
   const lastTap = useRef<number>(0);
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   // New state for View Lock
   const [viewLockTrigger, setViewLockTrigger] = useState<{ type: 'LOCK' | 'RESET' | 'UNLOCK', ts: number } | undefined>(undefined);
@@ -424,12 +426,8 @@ export default function App() {
      setState(s => ({ ...s, palette: PRESET_PALETTES[nextIndex] }));
   };
   
-  const handleExport = () => {
-      const filename = window.prompt("Enter filename for export:", "zen-sketch");
-      if (filename === null) return; // User cancelled
-      
-      const safeFilename = filename.trim() || "zen-sketch";
-      const data = JSON.stringify({ 
+  const getEncodedState = useCallback(() => {
+     return JSON.stringify({ 
         version: 7,
         palette: state.palette,
         strokes: currentStrokes,
@@ -439,6 +437,7 @@ export default function App() {
             focalLayerIndex: state.focalLayerIndex,
             springConfig: state.springConfig,
             backgroundColor: state.canvasBackgroundColor,
+            canvasBackgroundColor: state.canvasBackgroundColor, // Added for consistency
             globalLayerBlendMode: state.globalLayerBlendMode,
             canvasWidth: state.canvasWidth,
             layerBlendModes: state.layerBlendModes,
@@ -453,13 +452,27 @@ export default function App() {
             isParallaxSnappingEnabled: state.isParallaxSnappingEnabled,
             gridSize: state.gridSize
         }
-    });
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${safeFilename}.json`;
-    a.click();
+    }); 
+  }, [currentStrokes, state]);
+
+  // Initiate Export Flow
+  const handleExport = () => {
+      setShowExportDialog(true);
+  };
+
+  // Execute Export after Filename Confirm
+  const executeExport = (filenameInput: string) => {
+      const safeFilename = filenameInput.trim() || "zen-sketch";
+      const data = getEncodedState();
+      
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${safeFilename}.json`;
+      a.click();
+      
+      setShowExportDialog(false);
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -524,6 +537,9 @@ export default function App() {
   // --- Input Handling Refactor ---
   useEffect(() => {
       const handleKeyDown = (e: KeyboardEvent) => {
+          // If modal is open, let it handle keys (Enter/Escape) and don't trigger shortcuts
+          if (showExportDialog) return;
+
           const mode = state.viewMode === 'CREATION' ? 'creation' : 'embed';
           const bindings = shortcutConfig[mode];
           
@@ -661,7 +677,7 @@ export default function App() {
           window.removeEventListener('touchstart', handleTouchStart);
           window.removeEventListener('touchend', handleTouchEnd);
       };
-  }, [state, shortcutConfig]);
+  }, [state, shortcutConfig, showExportDialog]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -751,35 +767,6 @@ export default function App() {
     setState(s => ({ ...s, isPlaying: !s.isPlaying }));
   };
 
-  const getEncodedState = useCallback(() => {
-     return JSON.stringify({ 
-        version: 7,
-        palette: state.palette,
-        strokes: currentStrokes,
-        config: {
-            parallaxStrength: state.parallaxStrength,
-            parallaxInverted: state.parallaxInverted,
-            focalLayerIndex: state.focalLayerIndex,
-            springConfig: state.springConfig,
-            backgroundColor: state.canvasBackgroundColor,
-            canvasBackgroundColor: state.canvasBackgroundColor, // Added for consistency
-            globalLayerBlendMode: state.globalLayerBlendMode,
-            canvasWidth: state.canvasWidth,
-            layerBlendModes: state.layerBlendModes,
-            layerBlurStrengths: state.layerBlurStrengths,
-            blurStrength: state.blurStrength,
-            focusRange: state.focusRange,
-            symmetryMode: state.symmetryMode,
-            gridRoundness: state.gridRoundness,
-            // Added Grid/Snap state to encoded string
-            isGridEnabled: state.isGridEnabled,
-            isSnappingEnabled: state.isSnappingEnabled,
-            isParallaxSnappingEnabled: state.isParallaxSnappingEnabled,
-            gridSize: state.gridSize
-        }
-    }); 
-  }, [currentStrokes, state]);
-
   // Styling Logic for Container
   const getContainerStyle = () => {
       // EMBED MODE: Fill the container, apply internal styling
@@ -826,6 +813,12 @@ export default function App() {
             backgroundColor: state.isTransparentEmbed ? 'transparent' : (isCreationMode ? undefined : state.uiTheme.appBg)
         }}
     >
+      <FilenameDialog 
+            isOpen={showExportDialog}
+            onClose={() => setShowExportDialog(false)}
+            onConfirm={executeExport}
+      />
+
       {state.isDebugOpen && (
           <DebugOverlay 
             onClose={() => setState(s => ({ ...s, isDebugOpen: false }))} 
