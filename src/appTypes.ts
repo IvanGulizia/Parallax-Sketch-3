@@ -143,7 +143,9 @@ export interface AppState {
   palette: string[]; // Array of 9 hex codes
   parallaxStrength: number;
   parallaxInverted: boolean;
-  skewStrength: number; // New: Skew effect intensity (0-20ish)
+  shearStrength: number; // Renamed from skewStrength
+  tiltStrength: number; // NEW: 3D perspective tilt (Float style)
+  perspective: number; // NEW: CSS Perspective value (200-2000)
   springConfig: SpringConfig;
   focalLayerIndex: number; // The layer that stays still (0-8)
   isPlaying: boolean;

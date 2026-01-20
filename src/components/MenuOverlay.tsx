@@ -59,7 +59,9 @@ interface MenuOverlayProps {
   isOpen: boolean;
   parallaxStrength: number;
   parallaxInverted: boolean;
-  skewStrength: number; // NEW
+  shearStrength: number; // Renamed
+  tiltStrength: number; // NEW
+  perspective: number; // NEW
   focalLayerIndex: number;
   springConfig: SpringConfig;
   backgroundColor: string;
@@ -89,7 +91,9 @@ interface MenuOverlayProps {
   onReset: () => void;
   onParallaxStrengthChange: (val: number) => void;
   onParallaxInvertedChange: (val: boolean) => void;
-  onSkewStrengthChange: (val: number) => void; // NEW
+  onShearStrengthChange: (val: number) => void; // Renamed
+  onTiltStrengthChange: (val: number) => void; // New
+  onPerspectiveChange: (val: number) => void; // New
   onFocalLayerChange: (index: number) => void;
   onSpringConfigChange: (config: SpringConfig) => void;
   onBackgroundColorChange: (color: string) => void;
@@ -117,7 +121,9 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
     isOpen, 
     parallaxStrength,
     parallaxInverted,
-    skewStrength,
+    shearStrength,
+    tiltStrength,
+    perspective,
     focalLayerIndex,
     springConfig,
     backgroundColor,
@@ -147,7 +153,9 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
     onReset,
     onParallaxStrengthChange,
     onParallaxInvertedChange,
-    onSkewStrengthChange,
+    onShearStrengthChange,
+    onTiltStrengthChange,
+    onPerspectiveChange,
     onFocalLayerChange,
     onSpringConfigChange,
     onBackgroundColorChange,
@@ -599,14 +607,40 @@ export const MenuOverlay: React.FC<MenuOverlayProps> = ({
                      </div>
                 </ControlRow>
 
-                <ControlRow label="Parallax Skew">
+                <ControlRow label="Layer Shear">
                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-medium w-8 text-right" style={{ color: 'var(--slider-value-color)' }}>{skewStrength}</span>
+                        <span className="text-[10px] font-medium w-8 text-right" style={{ color: 'var(--slider-value-color)' }}>{shearStrength}</span>
                         <div className="w-24">
                             <Slider 
                                 min={-20} max={20} step={1}
-                                value={skewStrength} 
-                                onChange={onSkewStrengthChange}
+                                value={shearStrength} 
+                                onChange={onShearStrengthChange}
+                            />
+                        </div>
+                     </div>
+                </ControlRow>
+
+                <ControlRow label="3D Tilt">
+                     <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-medium w-8 text-right" style={{ color: 'var(--slider-value-color)' }}>{tiltStrength}</span>
+                        <div className="w-24">
+                            <Slider 
+                                min={0} max={20} step={1}
+                                value={tiltStrength} 
+                                onChange={onTiltStrengthChange}
+                            />
+                        </div>
+                     </div>
+                </ControlRow>
+
+                <ControlRow label="Perspective">
+                     <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-medium w-8 text-right" style={{ color: 'var(--slider-value-color)' }}>{Math.round(perspective)}</span>
+                        <div className="w-24">
+                            <Slider 
+                                min={200} max={2000} step={50}
+                                value={perspective} 
+                                onChange={onPerspectiveChange}
                             />
                         </div>
                      </div>

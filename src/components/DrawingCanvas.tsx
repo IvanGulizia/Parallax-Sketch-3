@@ -17,7 +17,9 @@ interface DrawingCanvasProps {
   palette: string[];
   parallaxStrength: number;
   parallaxInverted: boolean;
-  skewStrength: number; // NEW PROP
+  shearStrength: number; // Renamed from skewStrength
+  tiltStrength: number; // NEW
+  perspective: number; // NEW
   springConfig: SpringConfig;
   focalLayerIndex: number;
   isPlaying: boolean;
@@ -67,7 +69,9 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   palette,
   parallaxStrength,
   parallaxInverted,
-  skewStrength, // NEW
+  shearStrength, // Renamed
+  tiltStrength, // NEW
+  perspective, // NEW
   springConfig,
   focalLayerIndex,
   isPlaying,
@@ -209,7 +213,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   }, [dimensions.width]);
 
   const calculateLayerOffset = useCallback((layerIndex: number, currentX: number, currentY: number) => {
-        if (dimensions.width === 0 || dimensions.height === 0) return { x: 0, y: 0, skewX: 0, skewY: 0 };
+        if (dimensions.width === 0 || dimensions.height === 0) return { x: 0, y: 0, shearX: 0, shearY: 0, rotateX: 0, rotateY: 0 };
 
         const direction = parallaxInverted ? -1 : 1;
         const maxLayerDist = 4.0;
@@ -218,14 +222,34 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         const maxOffsetX = dimensions.width / 2;
         const maxOffsetY = dimensions.height / 2;
         
+        // Translation (Parallax)
         let offX = -currentX * maxOffsetX * depthFactor * strengthFactor * direction;
         let offY = -currentY * maxOffsetY * depthFactor * strengthFactor * direction;
         
-        // Calculate Skew
-        // Skewing is based on the perspective shift (currentX/Y) multiplied by depth
+        // Shear (Old Skew)
         // If currentX is 1 (far right), background layers (negative depthFactor) skew opposite
-        const skewX = currentX * skewStrength * depthFactor * direction;
-        const skewY = currentY * skewStrength * depthFactor * direction;
+        const shearX = currentX * shearStrength * depthFactor * direction;
+        const shearY = currentY * shearStrength * depthFactor * direction;
+
+        // Tilt (New 3D Perspective)
+        // Rotation must complement Translation.
+        // If Parallax is NORMAL (direction=1): Move Mouse Right -> Layer Translation moves Left (relative to canvas center) -> "Camera" moves Right.
+        // If Camera moves Right, we see the Right side of the object. Object rotates Left (Y Axis Negative).
+        // Standard "Tilt": Mouse Right -> Phone tilts Right -> Screen tilts Right (Right side away).
+        // Let's align with "Device Tilt" metaphor (Gal Shir Float style).
+        
+        const tiltFactor = tiltStrength * 2; 
+        
+        // Standard Tilt Logic:
+        // Mouse Down (Y > 0) -> Tilt Down -> Top comes forward (Rotate X Positive)
+        // Mouse Right (X > 0) -> Tilt Right -> Left comes forward (Rotate Y Negative)
+        
+        // Inversion Logic:
+        // If parallax is inverted, the depth map is inverted.
+        // To maintain the visual consistency, the rotation should also likely flip.
+        
+        const rotateX = currentY * tiltFactor * direction * (1 + Math.abs(depthFactor) * 0.2); 
+        const rotateY = -currentX * tiltFactor * direction * (1 + Math.abs(depthFactor) * 0.2);
 
         // Also snap layer offsets if enabled, for extra precision alignment
         if (isGridEnabled && isParallaxSnappingEnabled) {
@@ -233,8 +257,8 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
             offY = Math.round(offY / gridSize) * gridSize;
         }
 
-        return { x: offX, y: offY, skewX, skewY };
-  }, [parallaxStrength, parallaxInverted, focalLayerIndex, isGridEnabled, isParallaxSnappingEnabled, gridSize, dimensions, skewStrength]);
+        return { x: offX, y: offY, shearX, shearY, rotateX, rotateY };
+  }, [parallaxStrength, parallaxInverted, focalLayerIndex, isGridEnabled, isParallaxSnappingEnabled, gridSize, dimensions, shearStrength, tiltStrength]);
 
   const renderGuides = useCallback(() => {
       const canvas = guideCanvasRef.current;
@@ -523,15 +547,28 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const applyParallaxTransforms = (currentX: number, currentY: number) => {
     const layers = containerRef.current?.querySelectorAll('.layer-canvas');
     layers?.forEach((layer, i) => {
-        const { x, y, skewX, skewY } = calculateLayerOffset(i, currentX, currentY);
-        // Apply Translation AND Skew
-        (layer as HTMLElement).style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) skew(${skewX}deg, ${skewY}deg)`;
+        const { x, y, shearX, shearY, rotateX, rotateY } = calculateLayerOffset(i, currentX, currentY);
+        // Apply Translation, Perspective Rotation, and Shear
+        // We use the dynamic Perspective prop here
+        (layer as HTMLElement).style.transform = `
+            translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) 
+            perspective(${perspective}px) 
+            rotateX(${rotateX}deg) 
+            rotateY(${rotateY}deg) 
+            skew(${shearX}deg, ${shearY}deg)
+        `;
     });
 
     const guideLayer = containerRef.current?.querySelector('#guide-overlay');
     if (guideLayer) {
-        const { x, y, skewX, skewY } = calculateLayerOffset(activeLayer, currentX, currentY);
-        (guideLayer as HTMLElement).style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) skew(${skewX}deg, ${skewY}deg)`;
+        const { x, y, shearX, shearY, rotateX, rotateY } = calculateLayerOffset(activeLayer, currentX, currentY);
+        (guideLayer as HTMLElement).style.transform = `
+            translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) 
+            perspective(${perspective}px) 
+            rotateX(${rotateX}deg) 
+            rotateY(${rotateY}deg) 
+            skew(${shearX}deg, ${shearY}deg)
+        `;
     }
   };
 
@@ -539,7 +576,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     if (dimensions.width > 0 && dimensions.height > 0) {
         applyParallaxTransforms(currentOffset.current.x, currentOffset.current.y);
     }
-  }, [dimensions, focalLayerIndex, parallaxStrength, parallaxInverted, calculateLayerOffset, activeLayer, skewStrength]);
+  }, [dimensions, focalLayerIndex, parallaxStrength, parallaxInverted, calculateLayerOffset, activeLayer, shearStrength, tiltStrength, perspective]);
 
   useEffect(() => {
       if (exportConfig?.isRecording && !recorderRef.current) {
@@ -916,7 +953,7 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   useEffect(() => {
     requestRef.current = requestAnimationFrame(animationLoop);
     return () => cancelAnimationFrame(requestRef.current);
-  }, [parallaxStrength, focalLayerIndex, springConfig, parallaxInverted, isLowPowerMode, exportConfig, blurStrength, focusRange, layerBlurStrengths, getScaleFactor, guideColor, isPlaying, calculateLayerOffset, skewStrength]); 
+  }, [parallaxStrength, focalLayerIndex, springConfig, parallaxInverted, isLowPowerMode, exportConfig, blurStrength, focusRange, layerBlurStrengths, getScaleFactor, guideColor, isPlaying, calculateLayerOffset, shearStrength, perspective]); 
 
   const getNormalizedLocalPoint = (e: React.MouseEvent | React.TouchEvent | MouseEvent, overrideLayerId?: number) => {
     if (!containerRef.current) return { x: 0, y: 0 };

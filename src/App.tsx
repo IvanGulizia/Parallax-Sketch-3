@@ -235,7 +235,9 @@ export default function App() {
         palette: PRESET_PALETTES[0], 
         parallaxStrength: pStrength ? parseInt(pStrength) : 10, 
         parallaxInverted: false,
-        skewStrength: 0, // Default 0
+        shearStrength: 0, // Default 0
+        tiltStrength: 0, // Default 0
+        perspective: 1000, // Default 1000px
         springConfig: { stiffness: 0.2, damping: 0.2 }, 
         focalLayerIndex: DEFAULT_LAYER_INDEX, // Correctly set to Middle Layer
         isPlaying: initialMode !== 'CREATION', // Auto-play in view/embed
@@ -416,7 +418,9 @@ export default function App() {
               focusRange: data.c.fr ?? s.focusRange,
               symmetryMode: data.c.sm ?? SymmetryMode.NONE,
               gridRoundness: data.c.gr ?? 0, // Load grid roundness setting
-              skewStrength: data.c.sk ?? 0 // Load skew
+              shearStrength: data.c.sk ?? 0, // Legacy load skew as shear
+              tiltStrength: data.c.ts ?? 0, // Load tilt
+              perspective: data.c.pe ?? 1000 // Load perspective
               }));
           }
       } 
@@ -439,7 +443,10 @@ export default function App() {
               isSnappingEnabled: data.config.isSnappingEnabled ?? s.isSnappingEnabled,
               isParallaxSnappingEnabled: data.config.isParallaxSnappingEnabled ?? s.isParallaxSnappingEnabled,
               gridSize: data.config.gridSize ?? s.gridSize,
-              skewStrength: data.config.skewStrength ?? 0
+              // Map old "skewStrength" to "shearStrength" if "shearStrength" is missing
+              shearStrength: data.config.shearStrength ?? data.config.skewStrength ?? 0,
+              tiltStrength: data.config.tiltStrength ?? 0,
+              perspective: data.config.perspective ?? 1000
           }));
       }
   };
@@ -478,7 +485,9 @@ export default function App() {
             isSnappingEnabled: state.isSnappingEnabled,
             isParallaxSnappingEnabled: state.isParallaxSnappingEnabled,
             gridSize: state.gridSize,
-            skewStrength: state.skewStrength
+            shearStrength: state.shearStrength,
+            tiltStrength: state.tiltStrength,
+            perspective: state.perspective
         }
     }); 
   }, [currentStrokes, state]);
@@ -946,7 +955,9 @@ export default function App() {
                     palette={state.palette}
                     parallaxStrength={state.parallaxStrength}
                     parallaxInverted={state.parallaxInverted}
-                    skewStrength={state.skewStrength} // NEW PROP
+                    shearStrength={state.shearStrength} // Renamed
+                    tiltStrength={state.tiltStrength} // New
+                    perspective={state.perspective} // New
                     springConfig={state.springConfig}
                     focalLayerIndex={state.focalLayerIndex}
                     isPlaying={state.isPlaying}
@@ -999,7 +1010,9 @@ export default function App() {
                 isOpen={state.isMenuOpen} 
                 parallaxStrength={state.parallaxStrength}
                 parallaxInverted={state.parallaxInverted}
-                skewStrength={state.skewStrength} // NEW PROP
+                shearStrength={state.shearStrength} // Renamed
+                tiltStrength={state.tiltStrength} // New
+                perspective={state.perspective} // New
                 focalLayerIndex={state.focalLayerIndex}
                 springConfig={state.springConfig}
                 backgroundColor={state.canvasBackgroundColor}
@@ -1029,7 +1042,9 @@ export default function App() {
                 onReset={handleReset}
                 onParallaxStrengthChange={(val) => setState(s => ({ ...s, parallaxStrength: val }))}
                 onParallaxInvertedChange={(val) => setState(s => ({ ...s, parallaxInverted: val }))}
-                onSkewStrengthChange={(val) => setState(s => ({ ...s, skewStrength: val }))} // NEW HANDLER
+                onShearStrengthChange={(val) => setState(s => ({ ...s, shearStrength: val }))} // Renamed
+                onTiltStrengthChange={(val) => setState(s => ({ ...s, tiltStrength: val }))} // New
+                onPerspectiveChange={(val) => setState(s => ({ ...s, perspective: val }))} // New
                 onFocalLayerChange={(idx) => setState(s => ({ ...s, focalLayerIndex: idx }))}
                 onSpringConfigChange={(config) => setState(s => ({ ...s, springConfig: config }))}
                 onBackgroundColorChange={(c) => setState(s => ({ ...s, canvasBackgroundColor: c }))}

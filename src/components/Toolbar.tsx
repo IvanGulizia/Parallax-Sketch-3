@@ -143,7 +143,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             </button>
             
             {showColorPicker && (
-                <div className={`${popupClass} rounded-3xl p-4 flex-col gap-3 w-max max-w-[95vw]`}>
+                <div className={`${popupClass} rounded-3xl p-4 flex-col gap-3 w-auto min-w-[320px] max-w-[95vw]`}>
                     
                     {/* Tabs */}
                     <div className="flex bg-gray-100 rounded-full p-1 w-full mb-1">
@@ -196,8 +196,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                         {/* Palette - Single Line Fixed */}
                         {((!isEditingFill) || (isEditingFill && isFillEnabled)) && (
                             <>
-                                {/* Changed flex-wrap to flex-nowrap and removed tight minWidth to allow natural expansion */}
-                                <div className={`flex gap-2 justify-center flex-nowrap items-center transition-opacity duration-200 ${isEditingFill && isColorSynced ? 'opacity-50 pointer-events-none grayscale' : 'opacity-100'}`}>
+                                {/* Flex container without wrapping, ensures all items stay on one line */}
+                                <div className={`flex gap-2 justify-center items-center transition-opacity duration-200 ${isEditingFill && isColorSynced ? 'opacity-50 pointer-events-none grayscale' : 'opacity-100'}`}>
                                     
                                     {palette.map((color, index) => {
                                         const isActive = isEditingFill 
@@ -213,7 +213,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                                                             onToolChange(ToolType.BRUSH);
                                                         }
                                                     }}
-                                                    className={`w-8 h-8 rounded-full border-2 transition-transform ${isActive ? 'border-[var(--text-color)]' : 'border-transparent hover:scale-105'}`}
+                                                    className={`w-7 h-7 md:w-8 md:h-8 rounded-full border-2 transition-transform ${isActive ? 'border-[var(--text-color)]' : 'border-transparent hover:scale-105'}`}
                                                     style={{ backgroundColor: color }}
                                                 />
                                                 {isActive && (
@@ -235,7 +235,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                                     <div className="w-px h-6 bg-gray-200 mx-1 shrink-0" /> {/* Little separator */}
                                     <button
                                         onClick={() => onCyclePalette(1)}
-                                        className="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-black transition-colors shrink-0"
+                                        className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-black transition-colors shrink-0"
                                         title="Next Palette"
                                     >
                                         <Icons.Shuffle size={14} />
